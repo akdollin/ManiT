@@ -7,7 +7,8 @@ open Ast
 %token LBRACK RBRACK
 %token MOD
 %token PERIOD CARROT
-%token FUNC
+%token FUNC STRUCT
+%token <float> FLOAT
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
@@ -15,6 +16,7 @@ open Ast
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID
 %token <int> LITERAL
 %token <string> ID
+
 %token EOF
 
 %nonassoc NOELSE
@@ -37,7 +39,7 @@ program:
   decls EOF { $1 }
 
 decls:
-   /* nothing */ { [], [] }
+   /* nothing */ { [] }
  | decls vdecl { ($2 :: fst $1), snd $1 }
  | decls fdecl { fst $1, ($2 :: snd $1) }
 
