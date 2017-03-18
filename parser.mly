@@ -1,8 +1,13 @@
-/* Ocamlyacc parser for MicroC */
+/* Ocamlyacc parser for manit adopted from MicroC */
 
 %{
 open Ast
 %}
+
+%token LBRACK RBRACK
+%token MOD
+%token PERIOD CARROT
+%token FUNC
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
@@ -20,7 +25,7 @@ open Ast
 %left EQ NEQ
 %left LT GT LEQ GEQ
 %left PLUS MINUS
-%left TIMES DIVIDE
+%left TIMES DIVIDE MOD
 %right NOT NEG
 
 %start program
