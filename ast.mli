@@ -41,6 +41,7 @@ type stmt =
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
   | While of expr * stmt
+  | Empty
 
 type func_decl = {
     fname : string;
