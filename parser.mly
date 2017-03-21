@@ -79,6 +79,10 @@ expr_opt:
     /* nothing */ { Noexpr }
   | expr_no_bracket         { $1 }
 
+expr:
+  array_literal {ArrayLiteral($1)}
+  | expr_no_bracket {$1} %prec ASSIGN
+
 expr_no_bracket:
     LITERAL          { Literal($1) }
   | TRUE             { BoolLit(true) }
@@ -96,11 +100,15 @@ expr_no_bracket:
   | expr_no_bracket GEQ    expr_no_bracket { Binop($1, Geq,   $3) }
   | expr_no_bracket AND    expr_no_bracket { Binop($1, And,   $3) }
   | expr_no_bracket OR     expr_no_bracket { Binop($1, Or,    $3) }
-  | MINUS expr %prec NEG { Unop(Neg, $2) }
-  | NOT expr         { Unop(Not, $2) }
+  | ID bracket_expr_list {TableAccess($1,$2)}
+  | MINUS expr_no_bracket %prec NEG { Unop(Neg, $2) }
+  | NOT expr_no_bracket         { Unop(Not, $2) }
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+
+array_literal:
+  LBRACK actuals_opt RBRACK {ArrayLiteral($2)}
 
 actuals_opt:
     /* nothing */ { [] }
@@ -109,3 +117,15 @@ actuals_opt:
 actuals_list:
     expr                    { [$1] }
   | actuals_list COMMA expr { $3 :: $1 }
+
+bracket_expr_list:
+  | LBRACK expr RBRACK {[$2]}
+  | LBRACK expr RBRACK bracket_expr_list { $2 :: $4}
+
+func_decl:
+  VAR ID LPAREN param_list RPAREN LBRACE stmt_list RBRACE {{fname=$2;params=$4;body=$7;}}
+
+param_list:
+  {[]}
+  | ID { [$1] }
+  | ID COMMA param_list {$1::$3}
