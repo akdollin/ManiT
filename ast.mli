@@ -5,37 +5,51 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Void
+(* Table Literals *)
+type key_literal =
+    IntKey of int
+  | StringKey of string
 
-type bind = typ * string
+type literal = 
+    IntLiteral of int
+  | StringLiteral of string
+  | FloatLiteral of float
+  | Nolit
+
+and table_literal =
+    EmptyTable
+  | ArrayLiteral of expr list
+  | KeyValueLiteral of (key_literal * expr) list
 
 type expr =
-    Literal of int
-  | BoolLit of bool
-  | Id of string
+    Id of string
   | Binop of expr * op * expr
+  | Literal of literal
+  | TableLiteral of table_literal
   | Unop of uop * expr
   | Assign of string * expr
   | Call of string * expr list
-  | Noexpr
+  | TableAccess of string * (expr list)
+  | ThisAccess of expr
+  | TableAssign of string * (expr list) * expr
 
 type stmt =
     Block of stmt list
   | Expr of expr
+  | Func of func_decl
   | Return of expr
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
   | While of expr * stmt
+  | Empty
 
 type func_decl = {
-    typ : typ;
     fname : string;
-    formals : bind list;
-    locals : bind list;
+    formals: string list;
     body : stmt list;
   }
 
-type program = bind list * func_decl list
+type program = stmt
 
 (* Pretty-printing functions *)
 
