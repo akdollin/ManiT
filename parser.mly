@@ -35,7 +35,7 @@ open Ast
 
 %%
 
-(* block on stmt_list*)
+/* block on stmt_list*/
 program:
   stmt_list EOF { $1 }
   
@@ -44,24 +44,7 @@ stmt_list:
   | stmt stmt_list { $1 :: $2 }
 
 
-formals_opt:
-    /* nothing */ { [] }
-  | formal_list   { List.rev $1 }
-
-(* typ (type) *)
-formal_list:
-    ID                   { $1 }
-  | formal_list COMMA ID { $4 :: $1 }
-
-vdecl_list:
-    /* nothing */    { [] }
-  | vdecl_list vdecl { $2 :: $1 }
-
-vdecl:
-   typ ID SEMI { ($1, $2) }
-
-
-(* Add in EMPTY statement *)
+/* Add in EMPTY statement */
 stmt:
     expr_no_bracket SEMI { Expr $1 }
   | SEMI { Empty }
@@ -74,7 +57,7 @@ stmt:
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | VAR func_decl {Func($2)}
 
-(* S/R error issue check *)
+/* S/R error issue check */
 expr_opt:
     /* nothing */ { Noexpr }
   | expr_no_bracket         { $1 }
