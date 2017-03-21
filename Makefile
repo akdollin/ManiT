@@ -18,6 +18,10 @@ clean :
 	rm -rf testall.log *.diff microc scanner.ml parser.ml parser.mli
 	rm -rf *.cmx *.cmi *.cmo *.cmx *.o
 
+.PHONY : parse
+parse :
+	ocamlyacc -v parser.mly
+	
 # More detailed: build using ocamlc/ocamlopt + ocamlfind to locate LLVM
 
 OBJS = ast.cmx codegen.cmx parser.cmx scanner.cmx semant.cmx microc.cmx
