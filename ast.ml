@@ -21,7 +21,7 @@ and table_literal =
   | ArrayLiteral of expr list
   | KeyValueLiteral of (key_literal * expr) list
 
-type expr =
+and expr =
     Id of string
   | Binop of expr * op * expr
   | Literal of literal
