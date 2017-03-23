@@ -8,7 +8,7 @@
 (* standard character classes for numbers *)
 let integer = ['0'-'9']+
 let signed_int = ['+'  '-']? integer
-let decimal = let decimal = ['+' '-']? (integer '.' ['0'-'9']* | '.' integer) (['e' 'E'] signed_int)?
+let decimal = ['+' '-']? (integer '.' ['0'-'9']* | '.' integer) (['e' 'E'] signed_int)?
 
 rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)

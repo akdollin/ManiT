@@ -12,9 +12,9 @@ type key_literal =
 
 type literal = 
     IntLiteral of int
+  | BoolLiteral of bool
   | StringLiteral of string
   | FloatLiteral of float
-  | Nolit
 
 and table_literal =
     EmptyTable
@@ -32,6 +32,7 @@ and expr =
   | TableAccess of string * (expr list)
   | ThisAccess of expr
   | TableAssign of string * (expr list) * expr
+  | Noexpr
 
 type stmt =
     Block of stmt list
@@ -43,7 +44,7 @@ type stmt =
   | While of expr * stmt
   | Empty
 
-type func_decl = {
+and func_decl = {
     fname : string;
     formals: string list;
     body : stmt list;
@@ -52,7 +53,7 @@ type func_decl = {
 type program = stmt
 
 (* Pretty-printing functions *)
-
+(*
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
@@ -73,8 +74,8 @@ let string_of_uop = function
 
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
-  | BoolLit(true) -> "true"
-  | BoolLit(false) -> "false"
+  (*| BoolLiteral(true) -> "true"
+  | BoolLiteral(false) -> "false"*)
   | Id(s) -> s
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
@@ -115,3 +116,5 @@ let string_of_fdecl fdecl =
 let string_of_program (vars, funcs) =
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
   String.concat "\n" (List.map string_of_fdecl funcs)
+
+*)
