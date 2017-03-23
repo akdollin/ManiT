@@ -1,30 +1,11 @@
-(* Code generation: translate takes a semantically checked AST and
-produces LLVM IR
-
-LLVM tutorial: Make sure to read the OCaml version of the tutorial
-
-http://llvm.org/docs/tutorial/index.html
-
-Detailed documentation on the OCaml LLVM library:
-
-http://llvm.moe/
-http://llvm.moe/ocaml/
-
-*)
 
 module L = Llvm
 module A = Ast
 
-exception Error of string
+module StringMap = Map.Make(String)
 
-(* module StringMap = Map.Make(String)
-
-let translate (globals, functions) = *)
-
-let context = L.global_context ()
+let context = L.global_context () in
 let the_module = L.create_module context "ManiT"
-(* let builder = builder context
- *)
 let i32_t  = L.i32_type  context;;
 let i8_t   = L.i8_type   context;;
 let i1_t   = L.i1_type   context;;
@@ -34,24 +15,20 @@ let void_t = L.void_type context;;
 let print_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
 let print_func = L.declare_function "printf" print_t the_module in
 
-(* Construct code for an expression; return its value *)
-let rec expr llbuilder = function
-  A.IntLiteral i  -> L.build_global_stringptr "Test" "" llbuilder
-  |   A.BoolLiteral b   -> L.build_global_stringptr "Test" "" llbuilder
-  |   A.FloatLiteral f  -> L.build_global_stringptr "Test" "" llbuilder
-  |   A.StringLiteral s   -> L.build_global_stringptr s "" llbuilder
-  |   A.Call(fname, el)   -> (function 
-    "print" -> 
-      let print_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
-      let print = L.declare_function "print" print_t the_module in
+let builder = L.builder_at context in
 
-      let s = expr llbuilder (List.hd el) in
-      let zero = L.const_int i32_t 0 in
-      let s = L.build_in_bounds_gep s [| zero |] "" llbuilder in
-      L.build_call print [| s |] "" llbuilder
-    | _   -> L.build_global_stringptr "Test" "" llbuilder) fname
-in 
-let stmt llbuilder = function
-  Expr e  -> expr llbuilder e
-  
-in stmt
+(* Format string for print call *)
+let string_format_str = unique_global_stringptr "%s" "sfmt." in
+
+let rec expr ebuilder = function
+    A.Call("print", [e]) ->
+        L.build_call print_func [| string_format_str; (expr ebuilder e) |]
+            "print" ebuilder
+in
+let rec stmt sbuilder = function
+    A.Expr(e) -> ignore (expr sbuilder e); stmt sbuilder
+
+in
+let buildllvm s = stmt builder s
+in
+List.iter buildllvm 
