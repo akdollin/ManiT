@@ -42,14 +42,14 @@ let rec expr llbuilder = function
   |   A.StringLiteral s   -> L.build_global_stringptr s "" llbuilder
   |   A.Call(fname, el)   -> (function 
     "print" -> 
-      let print_t = L.var_arg_function_type i32_t [| pointer_type i8_t |] in
+      let print_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
       let print = L.declare_function "print" print_t the_module in
 
       let s = expr llbuilder (List.hd el) in
-      let zero = const_int i32_t 0 in
-      let s = build_in_bounds_gep s [| zero |] "" llbuilder in
-      build_call print [| s |] "" llbuilder
-    | _   -> build_global_stringptr "Test" "" llbuilder) fname
+      let zero = L.const_int i32_t 0 in
+      let s = L.build_in_bounds_gep s [| zero |] "" llbuilder in
+      L.build_call print [| s |] "" llbuilder
+    | _   -> L.build_global_stringptr "Test" "" llbuilder) fname
 in 
 let stmt llbuilder = function
   Expr e  -> expr llbuilder e

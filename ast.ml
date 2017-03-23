@@ -10,12 +10,6 @@ type key_literal =
     IntKey of int
   | StringKey of string
 
-type literal = 
-    IntLiteral of int
-  | BoolLiteral of bool
-  | StringLiteral of string
-  | FloatLiteral of float
-
 and table_literal =
     EmptyTable
   | ArrayLiteral of expr list
@@ -24,11 +18,14 @@ and table_literal =
 and expr =
     Id of string
   | Binop of expr * op * expr
-  | Literal of literal
+  | Call of string * expr list
+  | IntLiteral of int
+  | BoolLiteral of bool
+  | StringLiteral of string
+  | FloatLiteral of float
   | TableLiteral of table_literal
   | Unop of uop * expr
   | Assign of string * expr
-  | Call of string * expr list
   | TableAccess of string * (expr list)
   | ThisAccess of expr
   | TableAssign of string * (expr list) * expr
