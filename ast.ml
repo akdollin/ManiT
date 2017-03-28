@@ -4,53 +4,40 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
           And | Or
 
 type uop = Neg | Not
+type typ = Int | Bool | Void
+type bind = typ * string
 
-(* Table Literals *)
-type key_literal =
-    IntKey of int
-  | StringKey of string
-
-and table_literal =
-    EmptyTable
-  | ArrayLiteral of expr list
-  | KeyValueLiteral of (key_literal * expr) list
-
-and expr =
-    Id of string
+type expr =
+    Literal of int
+  | BoolLit of bool
+  | StringLit of string
+  | Id of string
   | Binop of expr * op * expr
-  | Call of string * expr list
-  | IntLiteral of int
-  | BoolLiteral of bool
-  | StringLiteral of string
-  | FloatLiteral of float
-  | TableLiteral of table_literal
   | Unop of uop * expr
   | Assign of string * expr
-  | TableAccess of string * (expr list)
-  | ThisAccess of expr
-  | TableAssign of string * (expr list) * expr
+  | Call of string * expr list
   | Noexpr
 
 type stmt =
     Block of stmt list
   | Expr of expr
-  | Func of func_decl
   | Return of expr
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
   | While of expr * stmt
-  | Empty
 
-and func_decl = {
+type func_decl = {
+    typ : typ;
     fname : string;
-    formals: string list;
+    formals : bind list;
+    locals : bind list;
     body : stmt list;
   }
 
-type program = stmt
+type program = bind list * func_decl list
 
 (* Pretty-printing functions *)
-(*
+
 let string_of_op = function
     Add -> "+"
   | Sub -> "-"
@@ -71,8 +58,9 @@ let string_of_uop = function
 
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
-  (*| BoolLiteral(true) -> "true"
-  | BoolLiteral(false) -> "false"*)
+  | StringLit(s) -> "\"" ^ s ^ "\""
+  | BoolLit(true) -> "true"
+  | BoolLit(false) -> "false"
   | Id(s) -> s
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
@@ -113,5 +101,3 @@ let string_of_fdecl fdecl =
 let string_of_program (vars, funcs) =
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
   String.concat "\n" (List.map string_of_fdecl funcs)
-
-*)

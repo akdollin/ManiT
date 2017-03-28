@@ -1,22 +1,17 @@
-/* Ocamlyacc parser for manit adopted from MicroC */
+/* Ocamlyacc parser for MicroC */
 
 %{
-open Ast
+    open Ast
+    let unescape s = Scanf.sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 %}
-
-%token LBRACK RBRACK
-%token MOD
-%token PERIOD CARROT
-%token VAR STRUCT
-%token <float> FLOAT
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID
 %token <int> LITERAL
+%token <string> STRING_LITERAL
 %token <string> ID
-
 %token EOF
 
 %nonassoc NOELSE
@@ -27,7 +22,7 @@ open Ast
 %left EQ NEQ
 %left LT GT LEQ GEQ
 %left PLUS MINUS
-%left TIMES DIVIDE MOD
+%left TIMES DIVIDE
 %right NOT NEG
 
 %start program
@@ -35,63 +30,84 @@ open Ast
 
 %%
 
-/* block on stmt_list*/
 program:
-  stmt_list EOF { $1 }
-  
+  decls EOF { $1 }
+
+decls:
+   /* nothing */ { [], [] }
+ | decls vdecl { ($2 :: fst $1), snd $1 }
+ | decls fdecl { fst $1, ($2 :: snd $1) }
+
+fdecl:
+   typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
+     { { typ = $1;
+	 fname = $2;
+	 formals = $4;
+	 locals = List.rev $7;
+	 body = List.rev $8 } }
+
+formals_opt:
+    /* nothing */ { [] }
+  | formal_list   { List.rev $1 }
+
+formal_list:
+    typ ID                   { [($1,$2)] }
+  | formal_list COMMA typ ID { ($3,$4) :: $1 }
+
+typ:
+    INT { Int }
+  | BOOL { Bool }
+  | VOID { Void }
+
+vdecl_list:
+    /* nothing */    { [] }
+  | vdecl_list vdecl { $2 :: $1 }
+
+vdecl:
+   typ ID SEMI { ($1, $2) }
+
 stmt_list:
     /* nothing */  { [] }
-  | stmt stmt_list { $1 :: $2 }
+  | stmt_list stmt { $2 :: $1 }
 
-
-/* Add in EMPTY statement */
 stmt:
-    expr_no_bracket SEMI { Expr $1 }
-  | SEMI { Empty }
+    expr SEMI { Expr $1 }
+  | RETURN SEMI { Return Noexpr }
   | RETURN expr SEMI { Return $2 }
-  | LBRACE stmt_list RBRACE { Block($2) }
+  | LBRACE stmt_list RBRACE { Block(List.rev $2) }
   | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
   | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
-  | VAR func_decl {Func($2)}
 
-/* S/R error issue check */
 expr_opt:
     /* nothing */ { Noexpr }
-  | expr_no_bracket         { $1 }
+  | expr          { $1 }
 
 expr:
-  array_literal {ArrayLiteral($1)}
-  | expr_no_bracket {$1} %prec ASSIGN
-
-expr_no_bracket:
     LITERAL          { Literal($1) }
+  | STRING_LITERAL   { StringLit(unescape $1) }
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
   | ID               { Id($1) }
-  | expr_no_bracket PLUS   expr_no_bracket { Binop($1, Add,   $3) }
-  | expr_no_bracket MINUS  expr_no_bracket { Binop($1, Sub,   $3) }
-  | expr_no_bracket TIMES  expr_no_bracket { Binop($1, Mult,  $3) }
-  | expr_no_bracket DIVIDE expr_no_bracket { Binop($1, Div,   $3) }
-  | expr_no_bracket EQ     expr_no_bracket { Binop($1, Equal, $3) }
-  | expr_no_bracket NEQ    expr_no_bracket { Binop($1, Neq,   $3) }
-  | expr_no_bracket LT     expr_no_bracket { Binop($1, Less,  $3) }
-  | expr_no_bracket LEQ    expr_no_bracket { Binop($1, Leq,   $3) }
-  | expr_no_bracket GT     expr_no_bracket { Binop($1, Greater, $3) }
-  | expr_no_bracket GEQ    expr_no_bracket { Binop($1, Geq,   $3) }
-  | expr_no_bracket AND    expr_no_bracket { Binop($1, And,   $3) }
-  | expr_no_bracket OR     expr_no_bracket { Binop($1, Or,    $3) }
-  | ID bracket_expr_list {TableAccess($1,$2)}
-  | MINUS expr_no_bracket %prec NEG { Unop(Neg, $2) }
-  | NOT expr_no_bracket         { Unop(Not, $2) }
+  | expr PLUS   expr { Binop($1, Add,   $3) }
+  | expr MINUS  expr { Binop($1, Sub,   $3) }
+  | expr TIMES  expr { Binop($1, Mult,  $3) }
+  | expr DIVIDE expr { Binop($1, Div,   $3) }
+  | expr EQ     expr { Binop($1, Equal, $3) }
+  | expr NEQ    expr { Binop($1, Neq,   $3) }
+  | expr LT     expr { Binop($1, Less,  $3) }
+  | expr LEQ    expr { Binop($1, Leq,   $3) }
+  | expr GT     expr { Binop($1, Greater, $3) }
+  | expr GEQ    expr { Binop($1, Geq,   $3) }
+  | expr AND    expr { Binop($1, And,   $3) }
+  | expr OR     expr { Binop($1, Or,    $3) }
+  | MINUS expr %prec NEG { Unop(Neg, $2) }
+  | NOT expr         { Unop(Not, $2) }
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
-
-array_literal:
-  LBRACK actuals_opt RBRACK {ArrayLiteral($2)}
 
 actuals_opt:
     /* nothing */ { [] }
@@ -100,15 +116,3 @@ actuals_opt:
 actuals_list:
     expr                    { [$1] }
   | actuals_list COMMA expr { $3 :: $1 }
-
-bracket_expr_list:
-  | LBRACK expr RBRACK {[$2]}
-  | LBRACK expr RBRACK bracket_expr_list { $2 :: $4}
-
-func_decl:
-  VAR ID LPAREN param_list RPAREN LBRACE stmt_list RBRACE {{fname=$2;params=$4;body=$7;}}
-
-param_list:
-  {[]}
-  | ID { [$1] }
-  | ID COMMA param_list {$1::$3}

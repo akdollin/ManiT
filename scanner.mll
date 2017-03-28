@@ -1,57 +1,59 @@
-(* Ocamllex scanner for MicroC *)
+(* Ocamllex scanner for ManiT *)
 
-{
-    open Parser
-    open Util
-}
+(*===---------------------------------------------------------------------===
+ * Lexer
+ * Currently assume that the only type is a double
+ *===---------------------------------------------------------------------===*)
 
-(* standard character classes for numbers *)
-let integer = ['0'-'9']+
-let signed_int = ['+'  '-']? integer
-let decimal = ['+' '-']? (integer '.' ['0'-'9']* | '.' integer) (['e' 'E'] signed_int)?
+{ open Parser }
+
+let string = '"' (([' '-'!' '#'-'[' ']'-'~'])* as s) '"'
 
 rule token = parse
+  (* recursive call to eat white space *)
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
-  | "/*"     { comment lexbuf }           (* Comments *)
-  | '('      { LPAREN }
-  | ')'      { RPAREN }
-  | '{'      { LBRACE }
-  | '}'      { RBRACE }
-  | ';'      { SEMI }
-  | ','      { COMMA }
-  | '+'      { PLUS }
-  | '-'      { MINUS }
-  | '*'      { TIMES }
-  | '/'      { DIVIDE }
-  | '='      { ASSIGN }
-  | "=="     { EQ }
-  | "!="     { NEQ }
-  | '<'      { LT }
-  | "<="     { LEQ }
-  | ">"      { GT }
-  | ">="     { GEQ }
-  | "+="     { PLUS_EQ }
-  | "-="     { MINUS_EQ }
-  | "*="     { TIMES_EQ }
-  | "/="     { DIVIDE_EQ }
-  | "&&"     { AND }
-  | "||"     { OR }
-  | "!"      { NOT }
-  | "if"     { IF }
-  | "else"   { ELSE }
-  | "for"    { FOR }
-  | "while"  { WHILE }
-  | "return" { RETURN }
-  | "true"   { TRUE }
-  | "false"  { FALSE }
-  | "var"    { VAR }
-  | integer as lxm { LITERAL(int_of_string lxm) }
-  | decimal as lxm { LITERAL(float_of_string lxm) }
-  | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
-  | eof { EOF }
-  | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+| "/*"     { comment lexbuf }           (* Comments *)
+| '('      { LPAREN }
+| ')'      { RPAREN }
+| '{'      { LBRACE }
+| '}'      { RBRACE }
+| ';'      { SEMI }
+| ','      { COMMA }
 
-  (* Switch to this rule when a comment is encountered *)
-  and comment = parse
-    "*/" { token lexbuf }
-    | _    { comment lexbuf }
+(* Operators *)
+| '+'      { PLUS }
+| '-'      { MINUS }
+| '*'      { TIMES }
+| '/'      { DIVIDE }
+| '='      { ASSIGN }
+| "=="     { EQ }
+| "!="     { NEQ }
+| '<'      { LT }
+| "<="     { LEQ }
+| ">"      { GT }
+| ">="     { GEQ }
+| "&&"     { AND }
+| "||"     { OR }
+| "!"      { NOT }
+
+(* branch control *)
+| "if"     { IF }
+| "else"   { ELSE }
+| "for"    { FOR }
+| "while"  { WHILE }
+| "return" { RETURN }
+
+(* conditional *)
+| "int"    { INT }
+| "bool"   { BOOL }
+| "true"   { TRUE }
+| "false"  { FALSE }
+| string   { STRING_LITERAL(s) }
+| ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
+| ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
+| eof { EOF }
+| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+
+and comment = parse
+  "*/" { token lexbuf }
+| _    { comment lexbuf }
