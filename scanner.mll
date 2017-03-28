@@ -44,6 +44,8 @@ rule token = parse
 | "return" { RETURN }
 
 (* conditional *)
+| "int"    { INT }
+| "bool"   { BOOL }
 | "true"   { TRUE }
 | "false"  { FALSE }
 | string   { STRING_LITERAL(s) }
