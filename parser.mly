@@ -1,7 +1,10 @@
-/* Ocamlyacc parser for MicroC */
+/* Ocamlyacc parser for ManiT */
 
 %{
-    open Ast
+    open Ast;;
+    let first (a,_,_) = a;;
+    let second (_,b,_) = b;;
+    let third (_,_,c) = c;;
     let unescape s = Scanf.sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 %}
 
@@ -34,9 +37,10 @@ program:
   decls EOF { $1 }
 
 decls:
-   /* nothing */ { [], [] }
- | decls vdecl { ($2 :: fst $1), snd $1 }
- | decls fdecl { fst $1, ($2 :: snd $1) }
+    /* nothing */ { [], [], [] }
+ | decls vdecl { ($2 :: first $1), second $1, third $1 }
+ | decls fdecl { first $1, ($2 :: second $1), third $1 }
+ | decls stmt  { first $1, second $1, ($2 :: third $1) }
 
 fdecl:
    typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE

@@ -4,7 +4,7 @@ module A = Ast
 
 module StringMap = Map.Make(String)
 
-let translate (globals, functions) =
+let translate (globals, functions, pstmts) =
   let context = L.global_context () in
   let the_module = L.create_module context "MicroC"
   and i32_t  = L.i32_type  context
@@ -16,6 +16,14 @@ let translate (globals, functions) =
       A.Int -> i32_t
     | A.Bool -> i1_t
     | A.Void -> void_t in
+
+  let main_func = {
+    A.fname = "main";
+    A.typ = A.Int;
+    A.formals = [];
+    A.locals = [];
+    A.body = pstmts;
+  } in
 
   (* Declare each global variable; remember its value in a map *)
   let global_vars =
@@ -29,6 +37,8 @@ let translate (globals, functions) =
   let printf_func = L.declare_function "printf" printf_t the_module in
 
   (* Define each function (arguments and return type) so we can call it *)
+  let functions = functions@[main_func] in
+
   let function_decls =
     let function_decl m fdecl =
       let name = fdecl.A.fname
