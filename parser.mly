@@ -40,7 +40,7 @@ decls:
     /* nothing */ { [], [], [] }
  | decls vdecl { ($2 :: first $1), second $1, third $1 }
  | decls fdecl { first $1, ($2 :: second $1), third $1 }
- | decls stmt  { first $1, second $1, ($2 :: third $1) }
+ | decls stmt  { first $1, second $1, (third $1 @ [$2]) }
 
 fdecl:
    typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
