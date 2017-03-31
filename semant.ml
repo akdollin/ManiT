@@ -1,23 +1,49 @@
-(* Semantic checking for the MicroC compiler *)
+(* Semantic checking for the MicroC compiler 
+checks semantics of AST and retunrs SAST.
+*)
 
+(* current functionalities:
+
+- populates environment
+*)
+
+(* stuff to FIX:
+*)
+
+(* Note:
+- in Ocaml func decl, (a : int) simply annotates that a is of type int. 
+  useful for user declared types.
+*)
+
+
+open Sast
+(* where/how is AST opened?
 open Ast
+*)
 
 module StringMap = Map.Make(String)
+
+(********************** MicroC *************************)
+(* first part of MicroC code starts here. 
+May need to reference it to transfer functionalities
 
 (* Semantic checking of a program. Returns void if successful,
    throws an exception if something is wrong.
 
    Check each global variable, then check each function *)
 
-let check (globals, functions) =
+
+let check (globals, functions, pstmts) =
+(* let check (globals, functions) = *)
 
   (* Raise an exception if the given list has a duplicate *)
   let report_duplicate exceptf list =
-    let rec helper = function
+    let rec helper = function 
 	n1 :: n2 :: _ when n1 = n2 -> raise (Failure (exceptf n1))
       | _ :: t -> helper t
       | [] -> ()
-    in helper (List.sort compare list)
+    in helper (List.sort compare list) 
+    (* Is compare a type? list of compares? *)
   in
 
   (* Raise an exception if a given binding is to a void type *)
@@ -30,6 +56,7 @@ let check (globals, functions) =
      the given lvalue type *)
   let check_assign lvaluet rvaluet err =
      if lvaluet == rvaluet then lvaluet else raise err
+     (* what is diff btw == and = ? *)
   in
    
   (**** Checking Global Variables ****)
@@ -47,23 +74,27 @@ let check (globals, functions) =
     (List.map (fun fd -> fd.fname) functions);
 
   (* Function declaration for a named function *)
+  (* SMap.add takes "printf", {}, (). They are key, val, initial? *) 
   let built_in_decls =  StringMap.add "print"
      { typ = Void; fname = "print"; formals = [(Int, "x")];
        locals = []; body = [] } (StringMap.singleton "printb"
      { typ = Void; fname = "printb"; formals = [(Bool, "x")];
        locals = []; body = [] })
    in
-     
+  
+  (* f_decls is a Map from (f (f map function1) function2)... *)
   let function_decls = List.fold_left (fun m fd -> StringMap.add fd.fname fd m)
                          built_in_decls functions
   in
-
+  
+  (* finds "main" *) 
   let function_decl s = try StringMap.find s function_decls
        with Not_found -> raise (Failure ("unrecognized function " ^ s))
   in
 
   let _ = function_decl "main" in (* Ensure "main" is defined *)
 
+  (* checks formals, fname, locals *)
   let check_function func =
 
     List.iter (check_not_void (fun n -> "illegal void formal " ^ n ^
@@ -88,6 +119,185 @@ let check (globals, functions) =
       with Not_found -> raise (Failure ("undeclared identifier " ^ s))
     in
 
+MicroC ended here*)
+(********************** MicroC *************************)
+
+let rec find (scope : symbol_table) name = try
+  List.find (fun (s, _) -> s = name) scope.variables with Not_found ->
+  match scope.parent with
+      Some(parent) -> find parent name
+    | _ -> raise Not_found
+
+let rec find_built_in name = try
+  List.find (fun (s, _) -> s = name) built_in with Not_found -> raise Not_found
+    
+(*check_expr
+  in : environment
+  out : a type in SAST
+  description: core type-matching function that annotates type of each expr.
+  this can be done differently by also taking in expr as input.
+*)
+(* take AST, check stuff, and return pair with val and type. see SAST *)
+let rec check_expr (env : environment) = function
+  (* literals *)
+  Ast.IntLit(l) -> IntLit(l), Int
+  | Ast.StringLit(l) -> StringLit(l), String
+  | Ast.BoolLit(l) -> BoolLit(l), Boolean
+  (* ID(string)
+  searches env for scope of v, the string of ID.
+  find returns Not_found or vdecl, a tuple of value and type
+  use that type to annotate ID. *)
+  | Ast.Id(v) -> let vdecl =
+    try find env.scope v with Not_found -> 
+    raise (Failure ("undeclared identifier " ^ v)) in
+    let (v, typ) = vdecl in
+    Id(v), typ
+  (* Assignment(string, expr)
+  checks expr of R.H.S, and compares type of expr to
+  what type of L.H.S in declaration. 
+  also, it populates scope's variable typ does not match or not found. *)
+  | Ast.Assign(v, e) ->
+    let (e, typ) = check_expr env e in (* R.H.S typ *)
+    let vdecl = try (* vdecl is set to decl *) 
+      let decl = find env.scope v in
+        if snd decl != typ then env.scope.variables <- 
+          (decl :: env.scope.variables) ; decl
+    with Not_found -> (*if find raises not found *)
+      let decl = (v, typ) in env.scope.variables <-
+        (decl :: env.scope.variables) ; decl
+      in
+      Assign(v, (e, typ)), typ
+  (* Binop(expr, op, expr)
+  checks types of L.H.S and R.H.S 
+  we need to specify rules for promotion/demotion of OPs *)
+  | Ast.Binop (e1, op, e2) ->
+    let e1 = check_expr env e1
+    let e2 = check_expr env e2 in
+  
+    let _, t1 = e1
+    let _, t2 = e2 in
+  
+    (
+      match op with
+      (* have general rule for now.
+      Ast.Plus -> 
+      (
+        match t1, t2 with
+	x, y when x = y && x != Table -> Binop(e1, op, e2), x
+	| x, y when x = String || y = String -> Binop(e1, op, e2), String
+	| Int, Double -> Binop(e1, op, e2), Double
+	| Double, Int -> Binop(e1, op, e2), Double
+	| _, _ -> raise(Failure("binary operation type mismatch"))
+      )
+      *) 
+      _ ->
+      (
+        match t1, t2 with
+	(* currently only checks int, double ops. strongly typed *)
+	Int, Int -> Binop(e1, op, e2), Int
+	Double, Double -> Binop(e1, op, e2), Double
+	(* specify our rules here.
+	Int, Int -> Binop(e1, op, e2), Int
+	x, y when x = y && x != Table && x != String -> Binop(e1, op, e2), x
+	| Int, Double -> Binop(e1, op, e2), Double
+	| Double, Int -> Binop(e1, op, e2), Double
+	*)
+	| _ , _ -> raise(Failure("binary operation type mismatch or op not support these types"))
+      )
+    )
+      
+  (* Unop(uop, expr)
+  uop is either Neg or Not
+  *)
+  | Ast.Unop(uop, e) ->
+        let (e, typ) = check_expr env e in
+	(
+	  (* this code can be cleaned up b/c value is same regardless of typ *)
+	  match uop with
+	    Neg -> 
+	    if typ != Int && typ != Double 
+	    then raise (Failure("unary minus opeartion does not support this type ")) ;
+	    Unop(uop, (e, typ)), typ
+	  | Not ->
+	    if typ != Bool
+	    then raise (Failure("unary not operation does not support this type "));
+	    Unop(uop, (e, typ)), typ
+	)
+      (* ERROR function call: *)
+      | Ast.Call(v, e) ->
+        (* HARD: Walk through func body and infer *)
+	Id("dummy"), Int
+      (* Need table access here. *)
+      
+      
+
+
+
+      (* check_stmt :
+         input : env
+	 output : annotated stmt in SAST.
+	 *)
+    let rec check_stmt env = function
+      (* Block
+      get scope, which is parent and variables.
+      stuck here.
+      *)
+        Ast.Block(stmtlist) ->
+          let scopeT = { parent = Some(env.scope); variables = [] } in
+          let envT = { env with scope = scopeT} in
+          let stmtlist = List.map (fun s -> (check_stmt env s)) stmtlist in 
+          envT.scope.variables <- List.rev scopeT.variables;
+          Block(stmtlist, envT)
+      | Ast.Expr(e) -> Expr(check_expr env e)
+      | Ast.Func(f) -> Expr((Id("dummy"), Int)) (*ERROR*)
+      | Ast.Return(e) -> Return(check_expr env e)
+      | Ast.If(e, s1, s2) ->
+        let (e, typ) = check_expr env e in
+	if typ != Boolean 
+	then raise (Failure ("If stmt does not support this type"));
+	If((e, typ), check_stmt env s1, check_stmt env s2)
+      | Ast.While(e, s) ->
+        let (e, typ) = check_expr env e in
+	if typ != Boolean
+	then raise (Failure ("While stmt does not support this type"));
+	While((e, typ), check_stmt env s)
+      | Ast.For(e1, e2, e3, s) -> Expr((Id("dummy"), Int)) 
+        (* ERROR:
+	let (e1, typ1) = check_expr env e1
+        let (e2, typ2) = check_expr env e2
+        let (e3, typ3) = check_expr env e3
+	*)
+
+(* checking expr and stmt ends here *)
+(* Func for initiating environment.
+environment is scope and return type. scope is parent and variables.
+may want to add more attributes.
+*)    
+let init_env : environment =
+  let init_scope = 
+  {
+    parent = None;
+    variables = [] 
+  }
+  in { scope = init_scope; return = None; }
+
+(* outter-most function that is called in manit.ml
+in: (bind_global list, functions, statements)
+out: same triple in SAST types, semantically checked.
+*)
+let check_program program =
+  let env = init_env in:x
+  let globals = 
+  and let functions = 
+  and let pstmts = check_stmt env program.Ast.pstmts
+  
+  in (globals, functions, pstmts)
+    
+
+     
+
+
+(* two functions - expr and stmt - are from Microc w/o type inf. 
     (* Return the type of an expression or throw an exception *)
     let rec expr = function
 	Literal _ -> Int
@@ -156,3 +366,7 @@ let check (globals, functions) =
    
   in
   List.iter check_function functions
+*)
+
+
+

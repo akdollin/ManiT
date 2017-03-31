@@ -43,9 +43,18 @@ rule token = parse
 | "while"  { WHILE }
 | "return" { RETURN }
 
-(* conditional *)
+(* conditionals *)
+(* types *)
+(* type inference 
 | "int"    { INT }
 | "bool"   { BOOL }
+*)
+
+(* keyword for func decl. see parser for why neccsary *)
+| "def"    { DEF }
+
+(* regardless of type inference, need different Literal for each type.
+needed types: int (which is LITERAL in MicroC), char, string, float/double, boolean, array?...*)  
 | "true"   { TRUE }
 | "false"  { FALSE }
 | string   { STRING_LITERAL(s) }

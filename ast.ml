@@ -4,18 +4,39 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
           And | Or
 
 type uop = Neg | Not
+
+(* type inference. Not sure about void. See parser.
 type typ = Int | Bool | Void
+*)
+
+(* bind was a user-defined type that has tuple of typ and string assoc with it.
+used in func_decl (formals and locals) and program.
+formals, locals in func_decl and globals in program used to be list of binds.
+after type inference, 
+formals is list of ID
+globals and locals are list of ID and exps
+we sepearte these cases.
+
+Maybe, we can also just give types to vdecl and formal variables?
+
 type bind = typ * string
+*)
+
+(* we don't need "bind". can just use string below. kept for consistency *)
+(* type bind_formals = string *)
+type bind_vars = string * expr (*need to resolve this in SAST *)
 
 type expr =
+    (* can group all literals into a single type. *)
     Literal of int
   | BoolLit of bool
   | StringLit of string
   | Id of string
   | Binop of expr * op * expr
   | Unop of uop * expr
+  (* commented out due to possible conflict. need this tho. see parser*) 
   | Assign of string * expr
-  | Call of string * expr list
+  | Call of string * expr list (*fname and actuals*)
   | Noexpr
 
 type stmt =
@@ -27,14 +48,27 @@ type stmt =
   | While of expr * stmt
 
 type func_decl = {
-    typ : typ;
+    (* fdecl in parser no longer has typ.
+    typ : typ; 
+    *)
     fname : string;
+    formals : string list;
+    locals : bind_vars list;
+    (* type inf
     formals : bind list;
     locals : bind list;
+    *)
     body : stmt list;
   }
 
+type program = bind_vars list * func_decl list * stmt list
+(*type inf
 type program = bind list * func_decl list * stmt list
+*) 
+
+
+
+
 
 (* Pretty-printing functions *)
 
