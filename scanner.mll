@@ -43,22 +43,22 @@ rule token = parse
 | "while"  { WHILE }
 | "return" { RETURN }
 
-(* conditionals *)
 (* types *)
-(* type inference 
+(* type inference
 | "int"    { INT }
 | "bool"   { BOOL }
 *)
 
-(* keyword for func decl. see parser for why neccsary *)
+(* keyword for func decl. see parser.*)
 | "def"    { DEF }
 
-(* regardless of type inference, need different Literal for each type.
-needed types: int (which is LITERAL in MicroC), char, string, float/double, boolean, array?...*)  
+(* Literals for each type. Order matters if same token matches two regexes
+need regex for types: char, float, array,
+*)
 | "true"   { TRUE }
 | "false"  { FALSE }
-| string   { STRING_LITERAL(s) }
-| ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
+| string   { STRINGLIT(s) }
+| ['0'-'9']+ as lxm { INTLIT(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }

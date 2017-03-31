@@ -1,13 +1,8 @@
-(* Semantic checking for the MicroC compiler 
-checks semantics of AST and retunrs SAST.
-*)
+(* Semantic checking for the MicroC compiler. 
+checks semantics of AST and returns SAST. *)
 
-(* current functionalities:
-
+(* current functionalities: 
 - populates environment
-*)
-
-(* stuff to FIX:
 *)
 
 (* Note:
@@ -15,13 +10,178 @@ checks semantics of AST and retunrs SAST.
   useful for user declared types.
 *)
 
-
 open Sast
-(* where/how is AST opened?
-open Ast
-*)
 
 module StringMap = Map.Make(String)
+
+(*find: helper function that finds given name in symbol table.
+  in: symbol_table scope in environment, name
+  out: vdecl *)
+let rec find (scope : symbol_table) name = try
+  List.find (fun (s, _) -> s = name) scope.variables with Not_found ->
+  match scope.parent with
+      Some(parent) -> find parent name
+    | _ -> raise Not_found
+
+let rec find_built_in name = try
+  List.find (fun (s, _) -> s = name) built_in with Not_found -> raise Not_found
+    
+(*check_expr: core type-matching function that recursively annotates type of each expr.
+  in : environment
+  out : a type in SAST *)
+let rec check_expr (env : environment) = function
+  (* literals *)
+  Ast.IntLit(l) -> IntLit(l), Int
+  | Ast.StringLit(l) -> StringLit(l), String
+  | Ast.BoolLit(l) -> BoolLit(l), Boolean
+  (* ID(string)
+  searches for scope with name v, the string of ID.
+  find returns Not_found or vdecl, a tuple of value and type.
+  use that type to annotate ID. *)
+  | Ast.Id(v) -> let vdecl =
+    try find env.scope v with Not_found -> 
+    raise (Failure ("undeclared identifier " ^ v)) in
+    let (v, typ) = vdecl in
+    Id(v), typ
+  (* Assignment(string, expr)
+  checks expr of R.H.S, and compares type of expr to that of L.H.S from its declaration. 
+  also, it populates scope's variable if typ does not match or not found. *)
+  | Ast.Assign(v, e) ->
+    let (e, typ) = check_expr env e in (* R.H.S typ *)
+    let vdecl = try (* vdecl is set to decl *) 
+      let decl = find env.scope v in
+        if snd decl != typ then env.scope.variables <- 
+          (decl :: env.scope.variables) ; decl
+    with Not_found -> (*if find raises not found *)
+      let decl = (v, typ) in env.scope.variables <-
+        (decl :: env.scope.variables) ; decl
+      in
+      Assign(v, (e, typ)), typ
+  (* Binop(expr, op, expr)
+  checks types of L.H.S and R.H.S
+  only allows ints (all OPs) for now.
+  we need to specify rules for promotion/demotion of OPs *)
+  | Ast.Binop (e1, op, e2) ->
+    let e1 = check_expr env e1
+    let e2 = check_expr env e2 in
+  
+    let _, t1 = e1
+    let _, t2 = e2 in
+  
+    (
+      match op with
+      (*
+      Ast.Plus -> 
+      (
+        match t1, t2 with
+	  x, y when x = y && x != Table -> Binop(e1, op, e2), x
+	| x, y when x = String || y = String -> Binop(e1, op, e2), String
+	| Int, Double -> Binop(e1, op, e2), Double
+	| Double, Int -> Binop(e1, op, e2), Double
+	| _, _ -> raise(Failure("binary operation type mismatch"))
+      )
+      *)
+      _ ->
+      (
+        match t1, t2 with
+	Int, Int -> Binop(e1, op, e2), Int
+	(* specify our rules here.
+	Int, Int -> Binop(e1, op, e2), Int
+	x, y when x = y && x != Table && x != String -> Binop(e1, op, e2), x
+	| Int, Double -> Binop(e1, op, e2), Double
+	| Double, Int -> Binop(e1, op, e2), Double
+	*)
+	| _ , _ -> raise(Failure("binary operation type mismatch or op not support these types"))
+      )
+    )
+      
+  (* Unop(uop, expr)
+  uop is either Neg or Not *)
+  | Ast.Unop(uop, e) ->
+      let (e, typ) = check_expr env e in
+      (
+	(* this code can be cleaned up b/c value is same regardless of typ *)
+	match uop with
+	  Neg -> 
+	  if typ != Int && typ != Double 
+	  then raise (Failure("unary minus opeartion does not support this type ")) ;
+	  Unop(uop, (e, typ)), typ
+	| Not ->
+	  if typ != Bool
+	  then raise (Failure("unary not operation does not support this type "));
+	  Unop(uop, (e, typ)), typ
+      )
+  (* ERROR function call: *)
+  | Ast.Call(v, e) ->
+  (*  Walk through func body and infer *)
+  Id("dummy"), Int
+  (* Need table access here. *)
+      
+      
+
+
+
+(* check_stmt :
+ input : env
+ output : annotated stmt in SAST.
+ *)
+let rec check_stmt env = function
+(* Block
+get scope, which is parent and variables.
+stuck here. *)
+  Ast.Block(stmtlist) ->
+    let scopeT = { parent = Some(env.scope); variables = [] } in
+    let envT = { env with scope = scopeT} in
+    let stmtlist = List.map (fun s -> (check_stmt env s)) stmtlist in 
+    envT.scope.variables <- List.rev scopeT.variables;
+    Block(stmtlist, envT)
+  | Ast.Expr(e) -> Expr(check_expr env e)
+  | Ast.Func(f) -> Expr((Id("dummy"), Int)) (*ERROR*)
+  | Ast.Return(e) -> Return(check_expr env e)
+  | Ast.If(e, s1, s2) ->
+    let (e, typ) = check_expr env e in
+    if typ != Boolean 
+    then raise (Failure ("If stmt does not support this type"));
+    If((e, typ), check_stmt env s1, check_stmt env s2)
+  | Ast.While(e, s) ->
+    let (e, typ) = check_expr env e in
+    if typ != Boolean
+    then raise (Failure ("While stmt does not support this type"));
+    While((e, typ), check_stmt env s)
+  | Ast.For(e1, e2, e3, s) -> Expr((Id("dummy"), Int)) 
+    (* ERROR:
+    let (e1, typ1) = check_expr env e1
+    let (e2, typ2) = check_expr env e2
+    let (e3, typ3) = check_expr env e3
+    *)
+
+(* checking expr and stmt ends here *)
+
+
+(* Func for initiating environment.
+environment is scope and return type. scope is parent and variables.
+may want to add more attributes.
+*)    
+let init_env : environment =
+  let init_scope = 
+  {
+    parent = None;
+    variables = [] 
+  }
+  in { scope = init_scope; return = None; }
+
+(* outter-most function that is called in manit.ml
+in: (bind_global list, functions, statements)
+out: same triple in SAST types, semantically checked.
+*)
+let check_program program =
+  let env = init_env
+  in let stmt_list = program.Ast.stmt_list
+  and let func_decl_list = program.Ast.func_decl_list 
+  in (stmt_list, func_decl_list)
+    
+
+     
 
 (********************** MicroC *************************)
 (* first part of MicroC code starts here. 
@@ -118,183 +278,6 @@ let check (globals, functions, pstmts) =
       try StringMap.find s symbols
       with Not_found -> raise (Failure ("undeclared identifier " ^ s))
     in
-
-MicroC ended here*)
-(********************** MicroC *************************)
-
-let rec find (scope : symbol_table) name = try
-  List.find (fun (s, _) -> s = name) scope.variables with Not_found ->
-  match scope.parent with
-      Some(parent) -> find parent name
-    | _ -> raise Not_found
-
-let rec find_built_in name = try
-  List.find (fun (s, _) -> s = name) built_in with Not_found -> raise Not_found
-    
-(*check_expr
-  in : environment
-  out : a type in SAST
-  description: core type-matching function that annotates type of each expr.
-  this can be done differently by also taking in expr as input.
-*)
-(* take AST, check stuff, and return pair with val and type. see SAST *)
-let rec check_expr (env : environment) = function
-  (* literals *)
-  Ast.IntLit(l) -> IntLit(l), Int
-  | Ast.StringLit(l) -> StringLit(l), String
-  | Ast.BoolLit(l) -> BoolLit(l), Boolean
-  (* ID(string)
-  searches env for scope of v, the string of ID.
-  find returns Not_found or vdecl, a tuple of value and type
-  use that type to annotate ID. *)
-  | Ast.Id(v) -> let vdecl =
-    try find env.scope v with Not_found -> 
-    raise (Failure ("undeclared identifier " ^ v)) in
-    let (v, typ) = vdecl in
-    Id(v), typ
-  (* Assignment(string, expr)
-  checks expr of R.H.S, and compares type of expr to
-  what type of L.H.S in declaration. 
-  also, it populates scope's variable typ does not match or not found. *)
-  | Ast.Assign(v, e) ->
-    let (e, typ) = check_expr env e in (* R.H.S typ *)
-    let vdecl = try (* vdecl is set to decl *) 
-      let decl = find env.scope v in
-        if snd decl != typ then env.scope.variables <- 
-          (decl :: env.scope.variables) ; decl
-    with Not_found -> (*if find raises not found *)
-      let decl = (v, typ) in env.scope.variables <-
-        (decl :: env.scope.variables) ; decl
-      in
-      Assign(v, (e, typ)), typ
-  (* Binop(expr, op, expr)
-  checks types of L.H.S and R.H.S 
-  we need to specify rules for promotion/demotion of OPs *)
-  | Ast.Binop (e1, op, e2) ->
-    let e1 = check_expr env e1
-    let e2 = check_expr env e2 in
-  
-    let _, t1 = e1
-    let _, t2 = e2 in
-  
-    (
-      match op with
-      (* have general rule for now.
-      Ast.Plus -> 
-      (
-        match t1, t2 with
-	x, y when x = y && x != Table -> Binop(e1, op, e2), x
-	| x, y when x = String || y = String -> Binop(e1, op, e2), String
-	| Int, Double -> Binop(e1, op, e2), Double
-	| Double, Int -> Binop(e1, op, e2), Double
-	| _, _ -> raise(Failure("binary operation type mismatch"))
-      )
-      *) 
-      _ ->
-      (
-        match t1, t2 with
-	(* currently only checks int, double ops. strongly typed *)
-	Int, Int -> Binop(e1, op, e2), Int
-	Double, Double -> Binop(e1, op, e2), Double
-	(* specify our rules here.
-	Int, Int -> Binop(e1, op, e2), Int
-	x, y when x = y && x != Table && x != String -> Binop(e1, op, e2), x
-	| Int, Double -> Binop(e1, op, e2), Double
-	| Double, Int -> Binop(e1, op, e2), Double
-	*)
-	| _ , _ -> raise(Failure("binary operation type mismatch or op not support these types"))
-      )
-    )
-      
-  (* Unop(uop, expr)
-  uop is either Neg or Not
-  *)
-  | Ast.Unop(uop, e) ->
-        let (e, typ) = check_expr env e in
-	(
-	  (* this code can be cleaned up b/c value is same regardless of typ *)
-	  match uop with
-	    Neg -> 
-	    if typ != Int && typ != Double 
-	    then raise (Failure("unary minus opeartion does not support this type ")) ;
-	    Unop(uop, (e, typ)), typ
-	  | Not ->
-	    if typ != Bool
-	    then raise (Failure("unary not operation does not support this type "));
-	    Unop(uop, (e, typ)), typ
-	)
-      (* ERROR function call: *)
-      | Ast.Call(v, e) ->
-        (* HARD: Walk through func body and infer *)
-	Id("dummy"), Int
-      (* Need table access here. *)
-      
-      
-
-
-
-      (* check_stmt :
-         input : env
-	 output : annotated stmt in SAST.
-	 *)
-    let rec check_stmt env = function
-      (* Block
-      get scope, which is parent and variables.
-      stuck here.
-      *)
-        Ast.Block(stmtlist) ->
-          let scopeT = { parent = Some(env.scope); variables = [] } in
-          let envT = { env with scope = scopeT} in
-          let stmtlist = List.map (fun s -> (check_stmt env s)) stmtlist in 
-          envT.scope.variables <- List.rev scopeT.variables;
-          Block(stmtlist, envT)
-      | Ast.Expr(e) -> Expr(check_expr env e)
-      | Ast.Func(f) -> Expr((Id("dummy"), Int)) (*ERROR*)
-      | Ast.Return(e) -> Return(check_expr env e)
-      | Ast.If(e, s1, s2) ->
-        let (e, typ) = check_expr env e in
-	if typ != Boolean 
-	then raise (Failure ("If stmt does not support this type"));
-	If((e, typ), check_stmt env s1, check_stmt env s2)
-      | Ast.While(e, s) ->
-        let (e, typ) = check_expr env e in
-	if typ != Boolean
-	then raise (Failure ("While stmt does not support this type"));
-	While((e, typ), check_stmt env s)
-      | Ast.For(e1, e2, e3, s) -> Expr((Id("dummy"), Int)) 
-        (* ERROR:
-	let (e1, typ1) = check_expr env e1
-        let (e2, typ2) = check_expr env e2
-        let (e3, typ3) = check_expr env e3
-	*)
-
-(* checking expr and stmt ends here *)
-(* Func for initiating environment.
-environment is scope and return type. scope is parent and variables.
-may want to add more attributes.
-*)    
-let init_env : environment =
-  let init_scope = 
-  {
-    parent = None;
-    variables = [] 
-  }
-  in { scope = init_scope; return = None; }
-
-(* outter-most function that is called in manit.ml
-in: (bind_global list, functions, statements)
-out: same triple in SAST types, semantically checked.
-*)
-let check_program program =
-  let env = init_env in:x
-  let globals = 
-  and let functions = 
-  and let pstmts = check_stmt env program.Ast.pstmts
-  
-  in (globals, functions, pstmts)
-    
-
-     
 
 
 (* two functions - expr and stmt - are from Microc w/o type inf. 
