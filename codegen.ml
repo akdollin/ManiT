@@ -5,17 +5,26 @@ module A = Sast
 module StringMap = Map.Make(String)
 
 let translate (stmts, functions) =
+  (* creates module called "ManiT" in the context *)
   let context = L.global_context () in
-  let the_module = L.create_module context "MicroC"
+  let the_module = L.create_module context "ManiT"
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
   and void_t = L.void_type context in
-
+  
+  (*in: type in SAST
+    out: type in LLVM *) 
   let ltype_of_typ = function
       A.Int -> i32_t
     | A.Bool -> i1_t
     | A.Void -> void_t in
+
+  (* How to modify SAST s.t. we have globals separate from stmts? *)
+  (* if stmts, including global vars, are in main_func,
+     since we simply concat our functions to main_func,
+     need to modify access to globals. *)
+     
 
   let main_func = {
     A.fname = "main";
@@ -25,11 +34,13 @@ let translate (stmts, functions) =
     A.body = stmts;
   } in
 
-
   (* Declare each global variable; remember its value in a map *)
+  (* global_vars is a stringmap. *)
   let global_vars =
     let global_var m (t, n) =
+      (* set llval initializer to pass to add func below. Why int? *) 
       let init = L.const_int (ltype_of_typ t) 0
+      (* add name(string) and llvalue(global) to Map. what is the_module? *)
       in StringMap.add n (L.define_global n init the_module) m in
     List.fold_left global_var StringMap.empty globals in
 
@@ -41,25 +52,32 @@ let translate (stmts, functions) =
   let functions = functions@[main_func] in
 
   let function_decls =
+    (* helper. takes our list of functions + main_func *)
     let function_decl m fdecl =
-      let name = fdecl.A.fname
+      let name = fdecl.A.fname (* how is functions.A.fname allowed? *)
       and formal_types =
 	Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.A.formals)
+      (* function_type is llval of return type and list of formal types. *)
       in let ftype = L.function_type (ltype_of_typ fdecl.A.typ) formal_types in
+      (* this line is designed to make fold_left work. also keeps fdecl. *)
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
     List.fold_left function_decl StringMap.empty functions in
   
   (* Fill in the body of the given function *)
   let build_function_body fdecl =
+    (* the_function is llvalue *)
     let (the_function, _) = StringMap.find fdecl.A.fname function_decls in
+    (* creates instruction builder at end of entry block of function *)
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
+    (* why is global_stringptr needed? *)
     let int_format_str = L.build_global_stringptr "%s\n" "fmt" builder in
     
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
     let local_vars =
+      (* sets name of value p to n *)
       let add_formal m (t, n) p = L.set_value_name n p;
 	let local = L.build_alloca (ltype_of_typ t) n builder in
 	ignore (L.build_store p local builder);
