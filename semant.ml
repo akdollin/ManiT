@@ -1,8 +1,12 @@
 (* Semantic checking for the MicroC compiler. 
 checks semantics of AST and returns SAST. *)
 
-(* current functionalities: 
-- populates environment
+(* current functionalities:
+- find / find_built_in
+- check_expr
+- check_stmt
+- init_env
+- check_program
 *)
 
 (* Note:
@@ -15,11 +19,15 @@ open Sast
 module StringMap = Map.Make(String)
 
 (*find: helper function that finds given name in symbol table.
-  in: symbol_table scope in environment, name
+  in: scope, name
   out: vdecl *)
 let rec find (scope : symbol_table) name = try
+  (*List.find ('a -> bool) -> a' list
+    finds first element in a' list that satisfies predicate (a' -> bool) *)
   List.find (fun (s, _) -> s = name) scope.variables with Not_found ->
+  (*if not found in our scope, try parent's scope or raise not found *)
   match scope.parent with
+    (* parent is also a scope. if parent is None, do nothing. *)
       Some(parent) -> find parent name
     | _ -> raise Not_found
 
@@ -30,33 +38,35 @@ let rec find_built_in name = try
   in : environment
   out : a type in SAST *)
 let rec check_expr (env : environment) = function
-  (* literals *)
-  Ast.IntLit(l) -> IntLit(l), Int
-  | Ast.StringLit(l) -> StringLit(l), String
-  | Ast.BoolLit(l) -> BoolLit(l), Boolean
-  (* ID(string)
-  searches for scope with name v, the string of ID.
-  find returns Not_found or vdecl, a tuple of value and type.
-  use that type to annotate ID. *)
-  | Ast.Id(v) -> let vdecl =
-    try find env.scope v with Not_found -> 
-    raise (Failure ("undeclared identifier " ^ v)) in
-    let (v, typ) = vdecl in
-    Id(v), typ
+  (* literals(value) *)
+  Ast.IntLit(value) -> IntLit(value), Int
+  | Ast.StringLit(value) -> StringLit(value), String
+  | Ast.BoolLit(value) -> BoolLit(value), Boolean
+  (* ID(string) *)
+  | Ast.Id(name) -> let vdecl =
+      (* see try / with clause in Ocaml guide *)
+      try find env.scope name with 
+      Not_found -> raise (Failure ("undeclared identifier " ^ name)) 
+      in let (name, typ) = vdecl in
+      Id(name), typ
   (* Assignment(string, expr)
   checks expr of R.H.S, and compares type of expr to that of L.H.S from its declaration. 
-  also, it populates scope's variable if typ does not match or not found. *)
-  | Ast.Assign(v, e) ->
-    let (e, typ) = check_expr env e in (* R.H.S typ *)
-    let vdecl = try (* vdecl is set to decl *) 
-      let decl = find env.scope v in
-        if snd decl != typ then env.scope.variables <- 
-          (decl :: env.scope.variables) ; decl
-    with Not_found -> (*if find raises not found *)
-      let decl = (v, typ) in env.scope.variables <-
-        (decl :: env.scope.variables) ; decl
-      in
-      Assign(v, (e, typ)), typ
+  populates scope's variable if not found.
+  modified from hawk. need testing. 
+  need to add rules/function for promotion/demotion here. *)
+  | Ast.Assign(name, expr) ->
+    let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
+    let sast_assign = 
+    try let (name, left_typ) = find env.scope name in
+      if left_typ != right_typ (* type mismatch. depends on rule. *)
+      then raise (Failure (" type mismatch "))
+      else Assign(name, (expr, right_typ)), right_typ
+    with Not_found -> (* new name. declaration. *)
+      let decl = (name, right_typ) in 
+      env.scope.variables <- (decl :: env.scope.variables) ;
+      Assign(name, (expr, right_typ)), right_typ
+    in sast_assign
+
   (* Binop(expr, op, expr)
   checks types of L.H.S and R.H.S
   only allows ints (all OPs) for now.
@@ -96,7 +106,8 @@ let rec check_expr (env : environment) = function
     )
       
   (* Unop(uop, expr)
-  uop is either Neg or Not *)
+  uop is either Neg or Not 
+  modified from hawk. need testing. *)
   | Ast.Unop(uop, e) ->
       let (e, typ) = check_expr env e in
       (
@@ -113,12 +124,10 @@ let rec check_expr (env : environment) = function
       )
   (* ERROR function call: *)
   | Ast.Call(v, e) ->
-  (*  Walk through func body and infer *)
-  Id("dummy"), Int
+      (*  Walk through func body and infer *)
+      Id("dummy"), Int
   (* Need table access here. *)
       
-      
-
 
 
 (* check_stmt :
@@ -126,14 +135,12 @@ let rec check_expr (env : environment) = function
  output : annotated stmt in SAST.
  *)
 let rec check_stmt env = function
-(* Block
-get scope, which is parent and variables.
-stuck here. *)
   Ast.Block(stmtlist) ->
-    let scopeT = { parent = Some(env.scope); variables = [] } in
-    let envT = { env with scope = scopeT} in
-    let stmtlist = List.map (fun s -> (check_stmt env s)) stmtlist in 
-    envT.scope.variables <- List.rev scopeT.variables;
+    let new_scope = { parent = Some(env.scope); variables = [] } in
+    let new_env = { env with scope = new_scope} in (* how is "with" used here? *)
+    (* populates variables and annotates exprs by calling check_stmt *)
+    let stmtlist = List.map (fun s -> (check_stmt new_env s)) stmtlist in 
+    new_env.scope.variables <- List.rev new_scope.variables;
     Block(stmtlist, envT)
   | Ast.Expr(e) -> Expr(check_expr env e)
   | Ast.Func(f) -> Expr((Id("dummy"), Int)) (*ERROR*)
@@ -159,16 +166,19 @@ stuck here. *)
 
 
 (* Func for initiating environment.
-environment is scope and return type. scope is parent and variables.
-may want to add more attributes.
+environment is a record with scope and return type. 
+scope is subrecord with parent and variables.
+may want to add more attributes to records.
 *)    
 let init_env : environment =
   let init_scope = 
   {
     parent = None;
-    variables = [] 
-  }
-  in { scope = init_scope; return = None; }
+    variables = [] }
+  in 
+  { 
+    scope = init_scope; 
+    return = None; }
 
 (* outter-most function that is called in manit.ml
 in: (bind_global list, functions, statements)
