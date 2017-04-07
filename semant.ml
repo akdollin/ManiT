@@ -169,7 +169,7 @@ let check_program p =
     let global_env = { funcs = []; func_signatures = []; finished=false} in
 
   let env = {env with is_pattern = true} in
-  let typed_program = List.map (fun (pattern, action) -> pattern, (check_stmt env global_env action)) p.Ast.full_program in
+  let typed_program = List.map check_stmt env global_env p.Ast.full_program in
   global_env.finished<-true;
 
   {typed_program = typed_program;}
