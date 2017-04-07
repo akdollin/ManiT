@@ -1,6 +1,4 @@
 (* Semantic checking for the MicroC compiler *)
-
-open Ast
 open Sast
 
 module StringMap = Map.Make(String)
@@ -24,7 +22,7 @@ let rec find_var_and_scope (scope : symbol_table) name = try
 let rec find (scope : symbol_table) name =
   fst (find_var_and_scope scope name )
 
-let check (globals, functions) =
+(* let check (globals, functions) =
 
   (* Raise an exception if the given list has a duplicate *)
   let report_duplicate exceptf list =
@@ -175,4 +173,40 @@ let check (globals, functions) =
     stmt (Block func.body)
    
   in
-  List.iter check_function functions
+  List.iter check_function functions *)
+
+let check_func_decls func_dec_list =
+  (*Make sure that there are no duplicates*)
+  let names = List.map fst func_dec_list in
+  if (Util.have_duplicates String.compare names) then
+    raise (Failure "Duplicate function names declared!")
+  else
+    func_dec_list
+
+let check_program p =
+  let func_decls = check_func_decls p.Ast.fdecl in
+    let init_scope = {
+      parent = None;
+      variables = [];
+    update_table_links = []} in
+    let init_env = { scope = init_scope;
+          return = None;
+          func_decls = func_decls;
+          is_pattern = false;
+          return_assigner = None;
+          returns = ref [] } in
+    let global_env = { funcs = []; func_signatures = []; finished=false} in
+  let (begin_block, env) = match check_stmt init_env global_env p.Ast.begin_stmt with
+                Block(begin_block, env) -> begin_block, env
+                | _ -> raise (Failure("begin is not a block")) in
+  let env = {env with is_pattern = true} in
+  let pattern_actions = List.map (fun (pattern, action) -> pattern, (check_pattern env global_env action)) p.Ast.pattern_actions in
+  let env = {env with is_pattern = false} in
+  let (end_block, env) = match check_stmt env global_env p.Ast.end_stmt with
+                Block(end_block, env) -> end_block, env
+                | _ -> raise (Failure("end is not a block")) in
+  global_env.finished<-true;
+  {concrete_funcs = global_env.funcs;
+  begin_stmt = Block(begin_block, env);
+  pattern_actions = pattern_actions;
+  end_stmt = Block(end_block, env);}

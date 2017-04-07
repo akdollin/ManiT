@@ -38,17 +38,15 @@ program:
 
 decls:
     /* nothing */ { [], [], [] }
- | decls vdecl { ($2 :: first $1), second $1, third $1 }
  | decls fdecl { first $1, ($2 :: second $1), third $1 }
  | decls stmt  { first $1, second $1, (third $1 @ [$2]) }
 
 fdecl:
-   typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
+   typ ID LPAREN formals_opt RPAREN LBRACE stmt_list RBRACE
      { { typ = $1;
 	 fname = $2;
 	 formals = $4;
-	 locals = List.rev $7;
-	 body = List.rev $8 } }
+	 body = List.rev $7 } }
 
 formals_opt:
     /* nothing */ { [] }
@@ -62,13 +60,6 @@ typ:
   INT { Int }
   | BOOL { Bool }
   | VOID { Void }
-
-vdecl_list:
-    /* nothing */    { [] }
-  | vdecl_list vdecl { $2 :: $1 }
-
-vdecl:
-   typ ID SEMI { ($1, $2) }
 
 stmt_list:
     /* nothing */  { [] }
