@@ -11,8 +11,9 @@
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE FOR WHILE INT BOOL VOID VARIABLE
-%token <int> LITERAL
+%token RETURN IF ELSE FOR WHILE INT FLOAT BOOL VOID
+%token <int> INTLITERAL
+%token <float> FLOATLITERAL
 %token <string> STRING_LITERAL
 %token <string> ID
 %token EOF
@@ -58,6 +59,7 @@ formal_list:
 
 typ:
   INT { Int }
+  | FLOAT { Float }
   | BOOL { Bool }
   | VOID { Void }
 
@@ -81,7 +83,7 @@ expr_opt:
   | expr          { $1 }
 
 expr:
-    LITERAL          { Literal($1) }
+  primitives { $1 }
   | STRING_LITERAL   { StringLit(unescape $1) }
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
@@ -103,6 +105,10 @@ expr:
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+
+primitives:
+    INTLITERAL { IntLiteral($1) }
+  | FLOATLITERAL { FloatLiteral($1) }
 
 actuals_opt:
     /* nothing */ { [] }

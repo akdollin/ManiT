@@ -4,11 +4,12 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
           And | Or
 
 type uop = Neg | Not
-type typ = Int | String | Bool | Void
+type typ = Int | Float | String | Bool | Void
 type bind = typ * string
 
 type expr =
-    Literal of int
+  IntLiteral of int
+  | FloatLiteral of float
   | BoolLit of bool
   | StringLit of string
   | Id of string

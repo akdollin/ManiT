@@ -14,168 +14,107 @@ let type_to_str = function
   | Bool -> "bool"
 
 
-(* let rec find_var_and_scope (scope : symbol_table) name = try
-  (List.find (fun (s, _) -> s = name) scope.variables),scope with Not_found ->
-  match scope.parent with
-    Some(parent) -> find_var_and_scope parent name
-    | _ -> raise Not_found
-
-let rec find (scope : symbol_table) name =
-  fst (find_var_and_scope scope name ) *)
-
-(* let check (globals, functions) =
-
-  (* Raise an exception if the given list has a duplicate *)
-  let report_duplicate exceptf list =
-    let rec helper = function
-	n1 :: n2 :: _ when n1 = n2 -> raise (Failure (exceptf n1))
-      | _ :: t -> helper t
-      | [] -> ()
-    in helper (List.sort compare list)
+(*
+AST to SAST
+*)
+let rec check_expr env global_env = function
+  Ast.Literal(l) -> Literal(l), Int
+  | Ast.BoolLit(l) -> Literal(l), Bool
+  | Ast.StringLit(l) -> Literal(l), String
+  | Ast.Id(v) ->
+    let vdecl = try
+      find env.scope v
+    with Not_found ->
+      raise (Failure("undeclared identifier " ^ v)) in
+    let (v, typ) = vdecl in
+    Id(v), typ
+  | Ast.Assign(v, assignee) ->
+  let assign_info = {id=v;assign_scope=env.scope;nesting=0} in
+  let assignee_env = match assignee with
+    Call(_) -> {env with return_assigner= (Some assign_info) }
+    | _ -> env
   in
-
-  (* Raise an exception if a given binding is to a void type *)
-  let check_not_void exceptf = function
-      (Void, n) -> raise (Failure (exceptf n))
-    | _ -> ()
+    let (assignee_e, assignee_type) as assignee = check_expr assignee_env global_env assignee in
+  let expr_promise = get_assignment_expression_promise assign_info global_env assignee_e assignee_type in
+  assert_not_void assignee_type "Can't assign void to a variable.";
+    let (new_e,new_type) as vdecl =
+  try (*Reassigning a variable to a different type is okay because assigment = declaration*)
+      let (_,prev_typ) = find env.scope v in (*Add it in the symbol table if its a different type*)
+      if (not (can_assign prev_typ assignee_type)) then
+    raise (Failure ("identifier type cannot be assigned to previously declared type " ^ v))
+      else
+    Assign (v, expr_promise), assignee_type
+    with Not_found -> (*Declaring/Defining a new variable*)
+      let decl = (v, assignee_type) in env.scope.variables <- (decl :: env.scope.variables) ;
+      VAssign (v, expr_promise), assignee_type
   in
-  
-  (* Raise an exception of the given rvalue type cannot be assigned to
-     the given lvalue type *)
-  let check_assign lvaluet rvaluet err =
-     if lvaluet == rvaluet then lvaluet else raise err
-  in
-   
-  (**** Checking Global Variables ****)
+  (if (is_table new_type) then
+    create_assignment_linkage_if_applicable v 0 env.scope assignee_e;
+    update_table_type env.scope v new_type);
+  vdecl
+  | Ast.Binop(e1, op, e2) ->
+    let e1 = check_expr env global_env e1
+    and e2 = check_expr env global_env e2 in
 
-  List.iter (check_not_void (fun n -> "illegal void global " ^ n)) globals;
-   
-  report_duplicate (fun n -> "duplicate global " ^ n) (List.map snd globals);
+    let _, t1 = e1
+    and _, t2 = e2 in
+    (*Operators come in*)
+  let return_type = get_binop_type t1 op t2 in
+  Binop(e1,op,e2),return_type
 
-  (**** Checking Functions ****)
-
-  if List.mem "print" (List.map (fun fd -> fd.fname) functions)
-  then raise (Failure ("function print may not be defined")) else ();
-
-  report_duplicate (fun n -> "duplicate function " ^ n)
-    (List.map (fun fd -> fd.fname) functions);
-
-  (* Function declaration for a named function *)
-  let built_in_decls =  StringMap.add "print"
-     { typ = Void; fname = "print"; formals = [(Int, "x")];
-       locals = []; body = [] } (StringMap.singleton "printb"
-     { typ = Void; fname = "printb"; formals = [(Bool, "x")];
-       locals = []; body = [] })
-   in
-     
-  let function_decls = List.fold_left (fun m fd -> StringMap.add fd.fname fd m)
-                         built_in_decls functions
-  in
-
-  let function_decl s = try StringMap.find s function_decls
-       with Not_found -> raise (Failure ("unrecognized function " ^ s))
-  in
-
-  let _ = function_decl "main" in (* Ensure "main" is defined *)
-
-  let check_function func =
-
-    List.iter (check_not_void (fun n -> "illegal void formal " ^ n ^
-      " in " ^ func.fname)) func.formals;
-
-    report_duplicate (fun n -> "duplicate formal " ^ n ^ " in " ^ func.fname)
-      (List.map snd func.formals);
-
-    List.iter (check_not_void (fun n -> "illegal void local " ^ n ^
-      " in " ^ func.fname)) func.locals;
-
-    report_duplicate (fun n -> "duplicate local " ^ n ^ " in " ^ func.fname)
-      (List.map snd func.locals);
-
-    (* Type of each variable (global, formal, or local *)
-    let symbols = List.fold_left (fun m (t, n) -> StringMap.add n t m)
-	StringMap.empty (globals @ func.formals @ func.locals )
+and check_stmt env global_env = function
+  Ast.Block(sl) ->
+    let scopeT = { parent = Some(env.scope); variables = []; update_table_links=[] } in
+    let envT = { env with scope = scopeT} in
+    let sl = List.map (fun s -> (check_stmt envT global_env s)) sl in envT.scope.variables <- List.rev scopeT.variables;
+    Block (sl, envT)
+  | Ast.Expr(e) ->
+      (match e with
+      Assign(_) | TableAssign(_) | Call(_) -> Expr(check_expr env global_env e)
+      | _ -> raise (Failure("Expression is not statement in Java")))
+  | Ast.Func(f) ->(
+    try (*Test to see if user is trying to overwrite built-in function*)
+      ignore(find_built_in f.Ast.fname) ;
+      raise (Failure("function is overwrites built-in function " ^ f.Ast.fname))
+    with Not_found -> (*valid function*)
+    (*We handle func generation elsewhere so can make this a no-op *)
+      Block([], env )
+    )
+  | Ast.Return(e) ->
+    let (return_e,return_t) as return_expr = check_expr env global_env e in
+    let expr_promise = match env.return_assigner with
+      None ->
+        get_expression_promise None global_env return_e return_t env.scope
+      | Some(assigner) as assgn ->
+        create_linkage_if_applicable assigner.id assigner.nesting assigner.assign_scope return_e env.scope;
+        get_expression_promise assgn global_env return_e return_t env.scope
     in
-
-    let type_of_identifier s =
-      try StringMap.find s symbols
-      with Not_found -> raise (Failure ("undeclared identifier " ^ s))
+    let return_type_promise = fun () -> (snd (expr_promise ())) in
+    env.returns:= return_type_promise::!(env.returns);
+    Return(expr_promise)
+  | Ast.If(e, s1, s2) ->
+    let (e, typ) = check_expr env global_env e in
+    if typ != Int && typ != Double then raise (Failure("If statement does not support this type")) ;
+    If((e, typ), check_stmt env global_env s1, check_stmt env global_env s2)
+  | Ast.While(e, s) ->
+    let (e, typ) = check_expr env global_env e in
+    if typ != Int && typ != Double then raise (Failure("unary minus operation does not support this type")) ;
+    While((e, typ), check_stmt env global_env s)
+  | Ast.For(key_id, table_id, stmt) ->
+    let scopeT = { parent = Some(env.scope); variables = [(key_id,String)]; update_table_links=[] } in
+    let envT = { env with scope = scopeT} in
+    let stmt = check_stmt envT global_env stmt in
+    let (_,table_t) = try
+        find env.scope table_id
+      with Not_found ->
+        raise (Failure("Undeclared table identifier in for statement:" ^ table_id))
     in
-
-    (* Return the type of an expression or throw an exception *)
-    let rec expr = function
-      Literal(l) _ ->( 
-        match l with
-        Literal(v) -> Literal(l), Int
-        | StringLiteral(v) -> Literal(l), String
-        )
-      | Id(v) -> type_of_identifier s
-      | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in
-	(match op with
-          Add | Sub | Mult | Div when t1 = Int && t2 = Int -> Int
-	| Equal | Neq when t1 = t2 -> Bool
-	| Less | Leq | Greater | Geq when t1 = Int && t2 = Int -> Bool
-	| And | Or when t1 = Bool && t2 = Bool -> Bool
-        | _ -> raise (Failure ("illegal binary operator " ^
-              string_of_typ t1 ^ " " ^ string_of_op op ^ " " ^
-              string_of_typ t2 ^ " in " ^ string_of_expr e))
-        )
-      | Unop(op, e) as ex -> let t = expr e in
-	 (match op with
-	   Neg when t = Int -> Int
-	 | Not when t = Bool -> Bool
-         | _ -> raise (Failure ("illegal unary operator " ^ string_of_uop op ^
-	  		   string_of_typ t ^ " in " ^ string_of_expr ex)))
-      | Noexpr -> Void
-      | Assign(var, e) as ex -> let lt = type_of_identifier var
-                                and rt = expr e in
-        check_assign lt rt (Failure ("illegal assignment " ^ string_of_typ lt ^
-				     " = " ^ string_of_typ rt ^ " in " ^ 
-				     string_of_expr ex))
-      | Call(fname, actuals) as call -> let fd = function_decl fname in
-         if List.length actuals != List.length fd.formals then
-           raise (Failure ("expecting " ^ string_of_int
-             (List.length fd.formals) ^ " arguments in " ^ string_of_expr call))
-         else
-           List.iter2 (fun (ft, _) e -> let et = expr e in
-              ignore (check_assign ft et
-                (Failure ("illegal actual argument found " ^ string_of_typ et ^
-                " expected " ^ string_of_typ ft ^ " in " ^ string_of_expr e))))
-             fd.formals actuals;
-           fd.typ
-    in
+    if is_table table_t then
+      For(key_id,table_id,stmt)
+    else
+      raise (Failure("Cannot do for statement on non-table " ^ table_id))
 
 
-
-    let check_bool_expr e = if expr e != Bool
-     then raise (Failure ("expected Boolean expression in " ^ string_of_expr e))
-     else () in
-
-    (* Verify a statement or throw an exception *)
-    let rec stmt = function
-      Block sl -> let rec check_block = function
-           [Return _ as s] -> stmt s
-         | Return _ :: _ -> raise (Failure "nothing may follow a return")
-         | Block sl :: ss -> check_block (sl @ ss)
-         | s :: ss -> stmt s ; check_block ss
-         | [] -> ()
-        in check_block sl
-      | Expr e -> ignore (expr e)
-      | Return e -> let t = expr e in if t = func.typ then () else
-         raise (Failure ("return gives " ^ string_of_typ t ^ " expected " ^
-                         string_of_typ func.typ ^ " in " ^ string_of_expr e))
-           
-      | If(p, b1, b2) -> check_bool_expr p; stmt b1; stmt b2
-      | For(e1, e2, e3, st) -> ignore (expr e1); check_bool_expr e2;
-                               ignore (expr e3); stmt st
-      | While(p, s) -> check_bool_expr p; stmt s
-    in
-
-    stmt (Block func.body)
-   
-  in
-  List.iter check_function functions *)
-(*Closed-open range from a to b, e.g. range 1 5 = [1;2;3;4] *)
 let rec range a b =
   if a=b-1 then
     [a]
@@ -198,16 +137,24 @@ let all_the_same = function
 let wrap_id str = "_" ^ str ^ "_"
 let unwrap_id s = String.sub s 1 ( (String.length s) - 2)
 
-let check_func_decls func_dec_list =
+let check_func_decls_stmt stmt list =
+  let rec get_func_decls_stmt_unchecked stmt=
+    match stmt list with
+      Ast.Block(stmt_list) -> List.concat (List.map get_func_decls_stmt_unchecked stmt_list)
+      | Ast.Func(fdecl) -> [fdecl.fname,fdecl]
+      | _ -> []
+  in
+  let func_decls = get_func_decls_stmt_unchecked stmt in
   (*Make sure that there are no duplicates*)
-  let names = List.map fst func_dec_list in
-  if (have_duplicates String.compare names) then
+  let names = List.map fst func_decls in
+  if (Util.have_duplicates String.compare names) then
     raise (Failure "Duplicate function names declared!")
   else
-    func_dec_list
+    func_decls
 
 let check_program p =
   let func_decls = check_func_decls p.Ast.full_program in
+
     let init_scope = {
       parent = None;
       variables = [];
@@ -219,17 +166,9 @@ let check_program p =
           return_assigner = None;
           returns = ref [] } in
     let global_env = { funcs = []; func_signatures = []; finished=false} in
-  let (begin_block, env) = match check_stmt init_env global_env p.Ast.begin_stmt with
-                Block(begin_block, env) -> begin_block, env
-                | _ -> raise (Failure("begin is not a block")) in
+
   let env = {env with is_pattern = true} in
-  let pattern_actions = List.map (fun (pattern, action) -> pattern, (check_pattern env global_env action)) p.Ast.pattern_actions in
-  let env = {env with is_pattern = false} in
-  let (end_block, env) = match check_stmt env global_env p.Ast.end_stmt with
-                Block(end_block, env) -> end_block, env
-                | _ -> raise (Failure("end is not a block")) in
+  let typed_program = List.map (fun (pattern, action) -> pattern, (check_stmt env global_env action)) p.Ast.full_program in
   global_env.finished<-true;
-  {concrete_funcs = global_env.funcs;
-  begin_stmt = Block(begin_block, env);
-  pattern_actions = pattern_actions;
-  end_stmt = Block(end_block, env);}
+
+  {typed_program = typed_program;}
