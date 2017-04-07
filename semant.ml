@@ -13,35 +13,6 @@ let type_to_str = function
   | Void -> "void"
   | Bool -> "bool"
 
-(* let rec find_var_and_scope (scope : symbol_table) name = try
-  (List.find (fun (s, _) -> s = name) scope.variables),scope with Not_found ->
-  match scope.parent with
-    Some(parent) -> find_var_and_scope parent name
-    | _ -> raise Not_found
-
-let rec find (scope : symbol_table) name =
-  fst (find_var_and_scope scope name ) *)
-
-(* let get_binop_type t1 op t2 =
-  match op with
-  Ast.Add -> (
-  match t1, t2 with
-  _, UnknownReturn | UnknownReturn,_ -> UnknownReturn
-  |x, y when x = y && not (is_table x) ->  x
-  | x, y when x = String || y = String ->  String
-  | Int, Double -> Double
-  | Double, Int -> Double
-  | _ , _ -> raise (Failure("binary operation type mismatch"))
-  )
-  | _ -> (
-  match t1, t2 with
-  _, UnknownReturn | UnknownReturn,_ -> UnknownReturn
-  |x, y when x = y && not (is_table x) && x != String ->  x
-  | Int, Double ->  Double
-  | Double, Int ->  Double
-  | _ , _ -> raise (Failure("binary operation type mismatch or operation does not support these types"))
-  ) *)
-
 (*AST to SAST*)
 let rec check_expr env global_env = function
   Ast.IntLiteral(l) -> Literal(l), Int
@@ -125,7 +96,7 @@ let rec range a b =
   else
     a::(range (a+1) b)
     
-let have_duplicates compare lst = 
+let check_duplicates compare lst = 
   let sorted = List.sort compare lst in
   match sorted with 
     [] -> false
@@ -148,28 +119,28 @@ let check_func_decls_stmt stmt_list1 =
   let func_decls = get_func_decls_stmt_unchecked stmt in
   (*Make sure that there are no duplicates*)
   let names = List.map fst func_decls in
-  if (have_duplicates String.compare names) then
-    raise (Failure "Duplicate function names declared!")
+  if (check_duplicates String.compare names) then
+    raise (Failure "Duplicate function names!")
   else
     func_decls
 
 let check_program p =
-  let func_decls = check_func_decls p.Ast.full_program in
+(*   check if there are duplicates in function names*)  
+let func_decls = check_func_decls p.Ast.full_program in
 
-    let init_scope = {
-      parent = None;
-      variables = [];
-    update_table_links = []} in
-    let init_env = { scope = init_scope;
-          return = None;
-          func_decls = func_decls;
-          is_pattern = false;
-          return_assigner = None;
-          returns = ref [] } in
-    let global_env = { funcs = []; func_signatures = []; finished=false} in
+  let init_scope = {
+    parent = None;
+    variables = [];
+  } in
+  let init_env = { 
+    scope = init_scope;
+    return = None;
+    func_decls = func_decls;
+  } in
+  let global_env = { funcs = []; finished=false} in
 
-  let env = {env with is_pattern = true} in
+  let env = {env} in
   let typed_program = List.map check_stmt env global_env p.Ast.full_program in
-  global_env.finished<-true;
+  global_env.finished <- true;
 
   {typed_program = typed_program;}
