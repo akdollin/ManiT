@@ -7,7 +7,7 @@ module StringMap = Map.Make(String)
    throws an exception if something is wrong.
 
    Check each global variable, then check each function *)
-let rec type_to_str = function
+let type_to_str = function
   Int -> "int"
   | String -> "String"
   | Void -> "void"
@@ -207,7 +207,7 @@ let check_func_decls func_dec_list =
     func_dec_list
 
 let check_program p =
-  let func_decls = check_func_decls p.Ast.func_decl in
+  let func_decls = check_func_decls p.Ast.full_program in
     let init_scope = {
       parent = None;
       variables = [];
