@@ -137,13 +137,10 @@ let all_the_same = function
   | lst ->
     (let hd = (List.hd lst) in
     List.for_all ((=) hd) lst)
-    
-let wrap_id str = "_" ^ str ^ "_"
-let unwrap_id s = String.sub s 1 ( (String.length s) - 2)
 
-let check_func_decls_stmt stmt list =
+let check_func_decls_stmt stmt_list1 =
   let rec get_func_decls_stmt_unchecked stmt=
-    match stmt list with
+    match stmt_list1 with
       Ast.Block(stmt_list) -> List.concat (List.map get_func_decls_stmt_unchecked stmt_list)
       | Ast.Func(fdecl) -> [fdecl.fname,fdecl]
       | _ -> []
@@ -151,7 +148,7 @@ let check_func_decls_stmt stmt list =
   let func_decls = get_func_decls_stmt_unchecked stmt in
   (*Make sure that there are no duplicates*)
   let names = List.map fst func_decls in
-  if (Util.have_duplicates String.compare names) then
+  if (have_duplicates String.compare names) then
     raise (Failure "Duplicate function names declared!")
   else
     func_decls
