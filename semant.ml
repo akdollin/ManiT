@@ -110,13 +110,13 @@ and check_stmt env global_env = function
       (match e with
       Assign(_) | Call(_) -> Expr(check_expr env global_env e)
       | _ -> raise (Failure("Expression is not statement in ManiT")))
-  | Ast.Func(f) ->(
+(*   | Ast.Func(f) ->(
     try (*Test to see if user is trying to overwrite built-in function*)
-(*       ignore(find_built_in f.Ast.fname) ;
-(*  *)      raise (Failure("function is overwrites built-in function " ^ f.Ast.fname))
- *)    with Not_found -> (*valid function*)
+      ignore(find_built_in f.Ast.fname) ;
+      raise (Failure("function is overwrites built-in function " ^ f.Ast.fname))
+    with Not_found -> (*valid function*)
       Block([], env )
-    )
+    ) *)
 
 
 let rec range a b =
