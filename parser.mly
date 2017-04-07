@@ -59,8 +59,7 @@ formal_list:
   | formal_list COMMA typ ID { ($3,$4) :: $1 }
 
 typ:
-  VARIABLE { Var }
-  | INT { Int }
+  INT { Int }
   | BOOL { Bool }
   | VOID { Void }
 
