@@ -1,11 +1,9 @@
 (* Abstract Syntax Tree and functions for printing it *)
-type t = Int | String | Void 
-
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
           And | Or
 
 type uop = Neg | Not
-type typ = Int | Bool | Void
+type typ = Int | String | Bool | Void
 type bind = typ * string
 
 type expr =
