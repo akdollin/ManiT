@@ -74,11 +74,11 @@ let translate (functions, pstmts) =
           (Array.to_list (L.params the_function)) in
       List.fold_left add_local formals fdecl.A.locals in
 
-(*     (* Return the value for a variable or formal argument *)
+    (* Return the value for a variable or formal argument *)
     let lookup n = try StringMap.find n local_vars
-                 with Not_found -> try StringMap.find n global_vars
-                 with Not_found -> raise (Failure ("undeclared variable " ^ n))
-    in *)
+(*                  with Not_found -> try StringMap.find n global_vars
+ *)                 with Not_found -> raise (Failure ("undeclared variable " ^ n))
+    in
 
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
