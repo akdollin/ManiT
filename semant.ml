@@ -13,6 +13,18 @@ let type_to_str = function
   | Void -> "void"
   | Bool -> "bool"
 
+(* finds if a variable name exists based on parents
+recurses up the parents *)
+let rec findvarScope (scope) name = 
+  try
+  (List.find (fun (s, _) -> s = name) scope.variables),scope with Not_found ->
+  match scope.parent with
+    Some(parent) -> findvarScope parent name
+    | _ -> raise Not_found
+
+let rec find (scope) name =
+  fst (findvarScope scope name )
+
 (*AST to SAST*)
 let rec check_expr env global_env = function
   Ast.IntLiteral(l) -> Literal(l), Int
@@ -20,7 +32,8 @@ let rec check_expr env global_env = function
   | Ast.BoolLit(l) -> Literal(l), Bool
   | Ast.StringLit(l) -> Literal(l), String
   | Ast.Id(v) ->
-    let vdecl = try
+    let vdecl = 
+    try
       find env.scope v
     with Not_found ->
       raise (Failure("Undeclared Identifier " ^ v)) in
