@@ -10,6 +10,7 @@ let translate (functions, pstmts) =
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
+  and pointer_t = L.pointer_type
   and void_t = L.void_type context in
 
   let ltype_of_typ = function
