@@ -13,21 +13,67 @@ let type_to_str = function
   | Void -> "void"
   | Bool -> "bool"
 
+let rec find_var_and_scope (scope : symbol_table) name = try
+  (List.find (fun (s, _) -> s = name) scope.variables),scope with Not_found ->
+  match scope.parent with
+    Some(parent) -> find_var_and_scope parent name
+    | _ -> raise Not_found
 
-(*
-AST to SAST
-*)
+let rec find (scope : symbol_table) name =
+  fst (find_var_and_scope scope name )
+
+(* let get_binop_type t1 op t2 =
+  match op with
+  Ast.Add -> (
+  match t1, t2 with
+  _, UnknownReturn | UnknownReturn,_ -> UnknownReturn
+  |x, y when x = y && not (is_table x) ->  x
+  | x, y when x = String || y = String ->  String
+  | Int, Double -> Double
+  | Double, Int -> Double
+  | _ , _ -> raise (Failure("binary operation type mismatch"))
+  )
+  | _ -> (
+  match t1, t2 with
+  _, UnknownReturn | UnknownReturn,_ -> UnknownReturn
+  |x, y when x = y && not (is_table x) && x != String ->  x
+  | Int, Double ->  Double
+  | Double, Int ->  Double
+  | _ , _ -> raise (Failure("binary operation type mismatch or operation does not support these types"))
+  ) *)
+
+(*AST to SAST*)
 let rec check_expr env global_env = function
-  Ast.Literal(l) -> Literal(l), Int
+  Ast.IntLiteral(l) -> Literal(l), Int
+  | Ast.FloatLiteral(l) -> Literal(l), Float
   | Ast.BoolLit(l) -> Literal(l), Bool
   | Ast.StringLit(l) -> Literal(l), String
   | Ast.Id(v) ->
     let vdecl = try
       find env.scope v
     with Not_found ->
-      raise (Failure("undeclared identifier " ^ v)) in
+      raise (Failure("Undeclared Identifier " ^ v)) in
     let (v, typ) = vdecl in
     Id(v), typ
+  | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in
+    (match op with
+      Add | Sub | Mul | Div when t1 = Int && t2 = Int -> Int
+      |   Add | Sub | Mul | Div when t1 = Float && t2 = Float -> Float
+      | Equal | Neq when t1 = t2 -> Bool
+      | Less | Leq | Greater | Geq when t1 = Int && t2 = Int -> Bool
+      | Less | Leq | Greater | Geq when t1 = Float && t2 = Float -> Bool
+      | And | Or when t1 = Bool && t2 = Bool -> Bool
+      | _ -> raise (Failure ("Illegal binary operator "))
+    )
+  | Ast.Binop(e1, op, e2) ->
+    let e1 = check_expr env global_env e1
+    and e2 = check_expr env global_env e2 in
+
+    let _, t1 = e1
+    and _, t2 = e2 in
+    (*Operators come in*)
+    let return_type = get_binop_type t1 op t2 in
+    Binop(e1,op,e2),return_type
   | Ast.Assign(v, assignee) ->
   let assign_info = {id=v;assign_scope=env.scope;nesting=0} in
   let assignee_env = match assignee with
@@ -52,15 +98,7 @@ let rec check_expr env global_env = function
     create_assignment_linkage_if_applicable v 0 env.scope assignee_e;
     update_table_type env.scope v new_type);
   vdecl
-  | Ast.Binop(e1, op, e2) ->
-    let e1 = check_expr env global_env e1
-    and e2 = check_expr env global_env e2 in
 
-    let _, t1 = e1
-    and _, t2 = e2 in
-    (*Operators come in*)
-  let return_type = get_binop_type t1 op t2 in
-  Binop(e1,op,e2),return_type
 
 and check_stmt env global_env = function
   Ast.Block(sl) ->
