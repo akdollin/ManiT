@@ -74,22 +74,22 @@ let rec check_expr env global_env = function
     (*Operators come in*)
     let return_type = get_binop_type t1 op t2 in
     Binop(e1,op,e2),return_type
-  | Ast.Assign(v, assignee) ->
-  let assign_info = {id=v;assign_scope=env.scope;nesting=0} in
-  let assignee_env = match assignee with
-    Call(_) -> {env with return_assigner= (Some assign_info) }
-    | _ -> env
-  in
+(*   | Ast.Assign(v, assignee) ->
+    let assign_info = {id=v;assign_scope=env.scope;nesting=0} in
+    let assignee_env = match assignee with
+      Call(_) -> {env with return_assigner= (Some assign_info) }
+      | _ -> env
+    in
     let (assignee_e, assignee_type) as assignee = check_expr assignee_env global_env assignee in
-  let expr_promise = get_assignment_expression_promise assign_info global_env assignee_e assignee_type in
-  assert_not_void assignee_type "Can't assign void to a variable.";
+    let expr_promise = get_assignment_expression_promise assign_info global_env assignee_e assignee_type in
+    assert_not_void assignee_type "Can't assign void to a variable.";
     let (new_e,new_type) as vdecl =
-  try (*Reassigning a variable to a different type is okay because assigment = declaration*)
-      let (_,prev_typ) = find env.scope v in (*Add it in the symbol table if its a different type*)
-      if (not (can_assign prev_typ assignee_type)) then
-    raise (Failure ("identifier type cannot be assigned to previously declared type " ^ v))
-      else
-    Assign (v, expr_promise), assignee_type
+      try (*Reassigning a variable to a different type is okay because assigment = declaration*)
+        let (_,prev_typ) = find env.scope v in (*Add it in the symbol table if its a different type*)
+        if (not (can_assign prev_typ assignee_type)) then
+          raise (Failure ("identifier type cannot be assigned to previously declared type " ^ v))
+        else
+          Assign (v, expr_promise), assignee_type
     with Not_found -> (*Declaring/Defining a new variable*)
       let decl = (v, assignee_type) in env.scope.variables <- (decl :: env.scope.variables) ;
       VAssign (v, expr_promise), assignee_type
@@ -97,7 +97,7 @@ let rec check_expr env global_env = function
   (if (is_table new_type) then
     create_assignment_linkage_if_applicable v 0 env.scope assignee_e;
     update_table_type env.scope v new_type);
-  vdecl
+  vdecl *)
 
 
 and check_stmt env global_env = function
@@ -108,49 +108,15 @@ and check_stmt env global_env = function
     Block (sl, envT)
   | Ast.Expr(e) ->
       (match e with
-      Assign(_) | TableAssign(_) | Call(_) -> Expr(check_expr env global_env e)
+      Assign(_) | Call(_) -> Expr(check_expr env global_env e)
       | _ -> raise (Failure("Expression is not statement in Java")))
   | Ast.Func(f) ->(
     try (*Test to see if user is trying to overwrite built-in function*)
       ignore(find_built_in f.Ast.fname) ;
       raise (Failure("function is overwrites built-in function " ^ f.Ast.fname))
     with Not_found -> (*valid function*)
-    (*We handle func generation elsewhere so can make this a no-op *)
       Block([], env )
     )
-  | Ast.Return(e) ->
-    let (return_e,return_t) as return_expr = check_expr env global_env e in
-    let expr_promise = match env.return_assigner with
-      None ->
-        get_expression_promise None global_env return_e return_t env.scope
-      | Some(assigner) as assgn ->
-        create_linkage_if_applicable assigner.id assigner.nesting assigner.assign_scope return_e env.scope;
-        get_expression_promise assgn global_env return_e return_t env.scope
-    in
-    let return_type_promise = fun () -> (snd (expr_promise ())) in
-    env.returns:= return_type_promise::!(env.returns);
-    Return(expr_promise)
-  | Ast.If(e, s1, s2) ->
-    let (e, typ) = check_expr env global_env e in
-    if typ != Int && typ != Double then raise (Failure("If statement does not support this type")) ;
-    If((e, typ), check_stmt env global_env s1, check_stmt env global_env s2)
-  | Ast.While(e, s) ->
-    let (e, typ) = check_expr env global_env e in
-    if typ != Int && typ != Double then raise (Failure("unary minus operation does not support this type")) ;
-    While((e, typ), check_stmt env global_env s)
-  | Ast.For(key_id, table_id, stmt) ->
-    let scopeT = { parent = Some(env.scope); variables = [(key_id,String)]; update_table_links=[] } in
-    let envT = { env with scope = scopeT} in
-    let stmt = check_stmt envT global_env stmt in
-    let (_,table_t) = try
-        find env.scope table_id
-      with Not_found ->
-        raise (Failure("Undeclared table identifier in for statement:" ^ table_id))
-    in
-    if is_table table_t then
-      For(key_id,table_id,stmt)
-    else
-      raise (Failure("Cannot do for statement on non-table " ^ table_id))
 
 
 let rec range a b =
