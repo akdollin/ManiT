@@ -13,14 +13,14 @@ let type_to_str = function
   | Void -> "void"
   | Bool -> "bool"
 
-let rec find_var_and_scope (scope : symbol_table) name = try
+(* let rec find_var_and_scope (scope : symbol_table) name = try
   (List.find (fun (s, _) -> s = name) scope.variables),scope with Not_found ->
   match scope.parent with
     Some(parent) -> find_var_and_scope parent name
     | _ -> raise Not_found
 
 let rec find (scope : symbol_table) name =
-  fst (find_var_and_scope scope name )
+  fst (find_var_and_scope scope name ) *)
 
 (* let get_binop_type t1 op t2 =
   match op with
@@ -109,12 +109,12 @@ and check_stmt env global_env = function
   | Ast.Expr(e) ->
       (match e with
       Assign(_) | Call(_) -> Expr(check_expr env global_env e)
-      | _ -> raise (Failure("Expression is not statement in Java")))
+      | _ -> raise (Failure("Expression is not statement in ManiT")))
   | Ast.Func(f) ->(
     try (*Test to see if user is trying to overwrite built-in function*)
-      ignore(find_built_in f.Ast.fname) ;
-      raise (Failure("function is overwrites built-in function " ^ f.Ast.fname))
-    with Not_found -> (*valid function*)
+(*       ignore(find_built_in f.Ast.fname) ;
+(*  *)      raise (Failure("function is overwrites built-in function " ^ f.Ast.fname))
+ *)    with Not_found -> (*valid function*)
       Block([], env )
     )
 
