@@ -45,8 +45,8 @@ let rec find (scope : symbol_table) name =
 (*AST to SAST*)
 let rec check_expr env global_env = function
   Ast.IntLiteral(l) -> Literal(l), Int
-  | Ast.FloatLiteral(l) -> Literal(l), Float
-  | Ast.BoolLit(l) -> Literal(l), Bool
+(*   | Ast.FloatLiteral(l) -> Literal(l), Float
+ *)  | Ast.BoolLit(l) -> Literal(l), Bool
   | Ast.StringLit(l) -> Literal(l), String
   | Ast.Id(v) ->
     let vdecl = try
