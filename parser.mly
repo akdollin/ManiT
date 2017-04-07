@@ -52,12 +52,21 @@ new literal types in scanner should be added here.*)
 *)
 
 program:
+  stmts EOF { $1 }
+
+stmts:
+  stmts stmt { ($2 :: $1) }
+  stmts fdecl { ($2 :: $1) }
+
+(* mereged stmt and fdecl)
+program:
   decls EOF { $1 }
 
 decls:
     /* nothing */ { [], [], [] }
   | decls stmt    { ($2 :: fst $1), snd $1 }
   | decls fdecl   { fst $1, ($2 :: snd $1) }
+*)
 
 (* fdecl no longer have typ or locals (locals are in body) *)
 fdecl:
@@ -77,6 +86,8 @@ formal_list:
 stmt_list:
     /* nothing */  { [] }
   | stmt_list stmt { $2 :: $1 }
+
+(* probably have to create separate pstmt w/o expr return or { } *)
 
 stmt:
     expr SEMI { Expr $1 } (* should "1+2;" be a valid program? *)
@@ -127,6 +138,10 @@ actuals_opt:
 actuals_list:
     expr                    { [$1] }
   | actuals_list COMMA expr { $3 :: $1 }
+
+
+
+
 
 
 (* ****************************** MicroC *********************************

@@ -6,7 +6,7 @@ module A = Sast
 
 module StringMap = Map.Make(String)
 
-let translate (stmts, functions) =
+let translate (stmts) =
   let context = L.global_context () in
   let the_module = L.create_module context "ManiT"
 
@@ -22,25 +22,79 @@ let translate (stmts, functions) =
     | A.Bool -> i1_t
     | A.Void -> void_t in
 
+  (* Declare printf(), which the print built-in function will call *)
+  let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
+  let printf_func = L.declare_function "printf" printf_t the_module in
+
+
+  (* can we use same func for locals? change define_global, module*) 
+  (* function to generate globals from stmts *)
+  let globals =
+    let rec find_global m stmt_or_expr = 
+    (
+      match stmt_or_expr with
+        A.Expr e -> find_global m e (* expr stmt *)
+        A.Assign (t, (id, e)) ->  (* assignment expr *)
+          let init = L.const_int (ltype_of_typ t) 0 in
+          let newMap = StringMap.add id (L.define_global id init the_module) m in
+          find_global newMap e
+      | _ -> m 
+    ) in 
+  List.fold_left find_global StringMap.empty stmts in 
+
+  (* main function *)
   let main_func = {
     A.fname = "main";
     A.typ = A.Int;
     A.formals = [];
     (* A.locals = []; *)
-    A.body = stmts;
+    (* A.body = stmts;  can't use like this. need to separate fdecls *)
+    A.body = [];
   } in
 
+  (* helper function to build function prototype *)
+  let build_fdecl m fdecl =
+    let name = fdecl.A.fname
+    and formal_types = 
+      Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.A.formals)
+    in let ftype = L.function_type (ltype_of_typ fdecl.A.typ) formal_types in
+  StringMap.add name (L.define_function name ftype the_module, fdecl) m in
+  
+  (* declare main_function *)
+  let fdecls =
+    (* map with main func. may be able to use list concat here *)
+    let main_decl = List.fold_left build_fdecl StringMap.empty [main_func] in
+    let find_fdecl m stmt = (
+      match stmt with
+        A.Fdecl -> build_fdecl m stmt (* have to declare Fdecl type? *)
+      | _ -> m
+    ) in
+  List.fold_left find_fdecl main_decl stmts
 
+
+
+
+
+
+
+
+
+  (* f to iterate through stmts,
+     if pstmt, generate code in the main block
+     if fdecl, generate fdef *)
+  let build stmt =
+    match stmt with
+      A.Fdecl -> build_fdef stmt
+    | _ -> build_mstmt stmt (* stmts in main *)
+  List.iter build stmts
+     
+(*
   (* Declare each global variable; remember its value in a map *)
   let global_vars =
     let global_var m (t, n) =
       let init = L.const_int (ltype_of_typ t) 0
       in StringMap.add n (L.define_global n init the_module) m in
     List.fold_left global_var StringMap.empty globals in
-
-  (* Declare printf(), which the print built-in function will call *)
-  let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
-  let printf_func = L.declare_function "printf" printf_t the_module in
 
   (* Define each function (arguments and return type) so we can call it *)
   let functions = functions@[main_func] in
@@ -51,20 +105,23 @@ let translate (stmts, functions) =
       and formal_types =
 	Array.of_list (List.map (fun (t,_) -> ltype_of_typ t) fdecl.A.formals)
       in let ftype = L.function_type (ltype_of_typ fdecl.A.typ) formal_types in
+      (* creates basic block and add to map. type is still fn *)
       StringMap.add name (L.define_function name ftype the_module, fdecl) m in
     List.fold_left function_decl StringMap.empty functions in
+*)
   
   (* Fill in the body of the given function *)
   let build_function_body fdecl =
-    let (the_function, _) = StringMap.find fdecl.A.fname function_decls in
+    let (the_function, _) = StringMap.find fdecl.A.fname fdecls in
+    (* entry block. *)
     let builder = L.builder_at_end context (L.entry_block the_function) in
-
+    (* what does this line do? *)
     let int_format_str = L.build_global_stringptr "%s\n" "fmt" builder in
     
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
-    let local_vars =
+    let local_vars = (* p is param *)
       let add_formal m (t, n) p = L.set_value_name n p;
 	let local = L.build_alloca (ltype_of_typ t) n builder in
 	ignore (L.build_store p local builder);
@@ -74,6 +131,7 @@ let translate (stmts, functions) =
 	let local_var = L.build_alloca (ltype_of_typ t) n builder
 	in StringMap.add n local_var m in
 
+      (* formals is a map. see fold_left2 *)
       let formals = List.fold_left2 add_formal StringMap.empty fdecl.A.formals
           (Array.to_list (L.params the_function)) in
       List.fold_left add_local formals fdecl.A.locals in
@@ -188,6 +246,7 @@ let translate (stmts, functions) =
 
   List.iter build_function_body functions;
   the_module
+
 
 
 
