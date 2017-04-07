@@ -207,7 +207,7 @@ let check_func_decls func_dec_list =
     func_dec_list
 
 let check_program p =
-  let func_decls = check_func_decls p.Ast.fdecl in
+  let func_decls = check_func_decls p.Ast.func_decl_list in
     let init_scope = {
       parent = None;
       variables = [];
