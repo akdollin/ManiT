@@ -39,7 +39,7 @@ type program = {
   full_program : stmt list;
 }
 
-(* Pretty-printing functions *)
+(* (* Pretty-printing functions *)
 
 let string_of_op = function
     Add -> "+"
@@ -105,4 +105,4 @@ let string_of_fdecl fdecl =
 let string_of_program (vars, funcs, stmts) =
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
   String.concat "\n" (List.map string_of_fdecl funcs) ^ "\n" ^
-  String.concat "\n" (List.map string_of_stmt stmts)
+  String.concat "\n" (List.map string_of_stmt stmts) *)
