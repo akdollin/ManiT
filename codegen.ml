@@ -84,7 +84,8 @@ let translate (functions, pstmts) =
 
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
-	A.Literal i -> L.const_int i32_t i
+	   A.IntLiteral i -> L.const_int i32_t i
+      | A.FloatLiteral f -> L.const_float float_t f
       | A.BoolLit b -> L.const_int i1_t (if b then 1 else 0)
       | A.StringLit s -> L.build_global_stringptr s "" builder
       | A.Noexpr -> L.const_int i32_t 0
