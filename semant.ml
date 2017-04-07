@@ -11,6 +11,7 @@ let rec type_to_str = function
   Int -> "int"
   | String -> "String"
   | Void -> "void"
+  | Bool -> "bool"
 
 
 let rec find_var_and_scope (scope : symbol_table) name = try
