@@ -14,14 +14,14 @@ let rec type_to_str = function
   | Bool -> "bool"
 
 
-let rec find_var_and_scope (scope : symbol_table) name = try
+(* let rec find_var_and_scope (scope : symbol_table) name = try
   (List.find (fun (s, _) -> s = name) scope.variables),scope with Not_found ->
   match scope.parent with
     Some(parent) -> find_var_and_scope parent name
     | _ -> raise Not_found
 
 let rec find (scope : symbol_table) name =
-  fst (find_var_and_scope scope name )
+  fst (find_var_and_scope scope name ) *)
 
 (* let check (globals, functions) =
 
