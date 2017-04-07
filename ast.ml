@@ -21,6 +21,7 @@ type expr =
 type stmt =
     Block of stmt list
   | Expr of expr
+  | Func of func_decl
   | Return of expr
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
