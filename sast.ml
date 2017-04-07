@@ -1,4 +1,5 @@
-(* Abstract Syntax Tree and functions for printing it *)
+(* S Abstract Syntax Tree and functions for printing it *)
+
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
           And | Or
 
@@ -21,17 +22,19 @@ type stmt =
     Block of stmt list
   | Expr of expr
   | Return of expr
+  | Func of func_decl
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
   | While of expr * stmt
-
-type func_decl = {
+and
+func_decl = {
     typ : typ;
     fname : string;
     formals : bind list;
     locals : bind list;
     body : stmt list;
-  }
+}
 
-type program = bind list * func_decl list * stmt list
-
+type program = {
+  full_program : stmt list;
+}
