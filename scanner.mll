@@ -44,6 +44,7 @@ rule token = parse
 | "return" { RETURN }
 
 (* conditional *)
+| "var"	   { VARIABLE }
 | "int"    { INT }
 | "bool"   { BOOL }
 | "true"   { TRUE }

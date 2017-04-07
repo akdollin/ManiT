@@ -11,7 +11,7 @@
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-%token RETURN IF ELSE FOR WHILE INT BOOL VOID
+%token RETURN IF ELSE FOR WHILE INT BOOL VOID VARIABLE
 %token <int> LITERAL
 %token <string> STRING_LITERAL
 %token <string> ID
@@ -59,7 +59,8 @@ formal_list:
   | formal_list COMMA typ ID { ($3,$4) :: $1 }
 
 typ:
-    INT { Int }
+  VARIABLE { Var }
+  | INT { Int }
   | BOOL { Bool }
   | VOID { Void }
 

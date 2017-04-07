@@ -1,6 +1,7 @@
 (* Semantic checking for the MicroC compiler *)
 
 open Ast
+open Sast
 
 module StringMap = Map.Make(String)
 
@@ -8,6 +9,20 @@ module StringMap = Map.Make(String)
    throws an exception if something is wrong.
 
    Check each global variable, then check each function *)
+let rec type_to_str = function
+  Int -> "int"
+  | String -> "String"
+  | Void -> "void"
+
+
+let rec find_var_and_scope (scope : symbol_table) name = try
+  (List.find (fun (s, _) -> s = name) scope.variables),scope with Not_found ->
+  match scope.parent with
+    Some(parent) -> find_var_and_scope parent name
+    | _ -> raise Not_found
+
+let rec find (scope : symbol_table) name =
+  fst (find_var_and_scope scope name )
 
 let check (globals, functions) =
 
@@ -90,9 +105,12 @@ let check (globals, functions) =
 
     (* Return the type of an expression or throw an exception *)
     let rec expr = function
-	Literal _ -> Int
-      | BoolLit _ -> Bool
-      | Id s -> type_of_identifier s
+      Literal(l) _ ->( 
+        match l with
+        Literal(v) -> Literal(l), Int
+        | StringLiteral(v) -> Literal(l), String
+        )
+      | Id(v) -> type_of_identifier s
       | Binop(e1, op, e2) as e -> let t1 = expr e1 and t2 = expr e2 in
 	(match op with
           Add | Sub | Mult | Div when t1 = Int && t2 = Int -> Int
@@ -128,13 +146,15 @@ let check (globals, functions) =
            fd.typ
     in
 
+
+
     let check_bool_expr e = if expr e != Bool
      then raise (Failure ("expected Boolean expression in " ^ string_of_expr e))
      else () in
 
     (* Verify a statement or throw an exception *)
     let rec stmt = function
-	Block sl -> let rec check_block = function
+      Block sl -> let rec check_block = function
            [Return _ as s] -> stmt s
          | Return _ :: _ -> raise (Failure "nothing may follow a return")
          | Block sl :: ss -> check_block (sl @ ss)
