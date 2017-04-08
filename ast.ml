@@ -34,9 +34,10 @@ type stmt =
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
   | While of expr * stmt
+  | Fdecl of fdecl
 
 and 
-type fdecl = {
+fdecl = {
     (* fdecl no longer has typ or locals. formals no longer have type. see parser.
     typ : typ; 
     formals : bind list;

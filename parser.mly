@@ -58,9 +58,9 @@ expr_opt:
 
 fdecl:
    ID LPAREN formals_opt RPAREN LBRACE stmt_list RBRACE
-   { { fname = $2;
-       formals = $4;
-       body = List.rev $7 } }
+   { { fname = $1;
+       formals = $3;
+       body = List.rev $6 } }
 
 formals_opt:
     /* nothing */ { [] }

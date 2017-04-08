@@ -18,10 +18,13 @@ open Sast
 
 module StringMap = Map.Make(String)
 
+let built_in = [("print", String)] 
+
+
 (*find: helper function that finds given name in symbol table.
   in: scope, name
   out: vdecl *)
-let rec find (scope : symbol_table) name = try
+let rec find scope name = try
   (*List.find ('a -> bool) -> a' list
     finds first element in a' list that satisfies predicate (a' -> bool) *)
   List.find (fun (s, _) -> s = name) scope.variables with Not_found ->
@@ -31,8 +34,9 @@ let rec find (scope : symbol_table) name = try
       Some(parent) -> find parent name
     | _ -> raise Not_found
 
-let rec find_built_in name = try
+let (*rec*) find_built_in name = try
   List.find (fun (s, _) -> s = name) built_in with Not_found -> raise Not_found
+  (* see top of semant for built_in *)
     
 (*check_expr: core type-matching function that recursively annotates type of each expr.
   in : environment
@@ -41,7 +45,7 @@ let rec check_expr (env : environment) = function
   (* literals(value) *)
   Ast.IntLit(value) -> IntLit(value), Int
   | Ast.StringLit(value) -> StringLit(value), String
-  | Ast.BoolLit(value) -> BoolLit(value), Boolean
+  | Ast.BoolLit(value) -> BoolLit(value), Bool
   (* ID(string) *)
   | Ast.Id(name) -> let vdecl =
       (* see try / with clause in Ocaml guide *)
@@ -73,10 +77,10 @@ let rec check_expr (env : environment) = function
   we need to specify rules for promotion/demotion of OPs *)
   | Ast.Binop (e1, op, e2) ->
     let e1 = check_expr env e1
-    let e2 = check_expr env e2 in
+    and e2 = check_expr env e2 in
   
     let _, t1 = e1
-    let _, t2 = e2 in
+    and _, t2 = e2 in
   
     (
       match op with
@@ -114,7 +118,7 @@ let rec check_expr (env : environment) = function
 	(* this code can be cleaned up b/c value is same regardless of typ *)
 	match uop with
 	  Neg -> 
-	  if typ != Int && typ != Double 
+	  if typ != Int && typ != Float 
 	  then raise (Failure("unary minus opeartion does not support this type ")) ;
 	  Unop(uop, (e, typ)), typ
 	| Not ->
@@ -141,19 +145,19 @@ let rec check_stmt env = function
     (* populates variables and annotates exprs by calling check_stmt *)
     let stmtlist = List.map (fun s -> (check_stmt new_env s)) stmtlist in 
     new_env.scope.variables <- List.rev new_scope.variables;
-    Block(stmtlist, envT)
+    Block(stmtlist) (* new_env *)
   | Ast.Fdecl(fdecl) -> Expr((Id("Fdecl ERROR"), Int)) 
   | Ast.Expr(e) -> Expr(check_expr env e)
-  | Ast.Func(f) -> Expr((Id("Fcall ERROR"), Int)) (*ERROR*)
+  (* | Ast.Func(f) -> Expr((Id("Fcall ERROR"), Int)) ERROR*)
   | Ast.Return(e) -> Return(check_expr env e)
   | Ast.If(e, s1, s2) ->
     let (e, typ) = check_expr env e in
-    if typ != Boolean 
+    if typ != Bool 
     then raise (Failure ("If stmt does not support this type"));
     If((e, typ), check_stmt env s1, check_stmt env s2)
   | Ast.While(e, s) ->
     let (e, typ) = check_expr env e in
-    if typ != Boolean
+    if typ != Bool
     then raise (Failure ("While stmt does not support this type"));
     While((e, typ), check_stmt env s)
   | Ast.For(e1, e2, e3, s) -> Expr((Id("dummy"), Int)) 
@@ -172,7 +176,7 @@ scope is subrecord with parent and variables.
 may want to add more attributes to records.
 *)    
 let init_env : environment =
-  let init_scope = 
+  let init_scope  = 
   {
     parent = None;
     variables = [] }
@@ -187,22 +191,26 @@ out: same triple in SAST types, semantically checked.
 *)
 let check_program program =
   let env = init_env in
+  let stmts = List.map (fun _stmt -> check_stmt env _stmt) program
+  in stmts
+(*
+  let env = init_env in
   let stmt_list = program.Ast.stmt_list
   and let func_decl_list = program.Ast.func_decl_list 
   in (stmt_list, func_decl_list)
-    
+*)  
 
      
 
 (********************** MicroC *************************)
-(* first part of MicroC code starts here. 
-May need to reference it to transfer functionalities
+(* first part of MicroC code starts here.  
+May need to reference it to transfer functionalities *)
 
 (* Semantic checking of a program. Returns void if successful,
    throws an exception if something is wrong.
 
    Check each global variable, then check each function *)
-
+(*
 
 let check (globals, functions, pstmts) =
 (* let check (globals, functions) = *)
@@ -362,5 +370,5 @@ let check (globals, functions, pstmts) =
   List.iter check_function functions
 *)
 
-
+*)
 
