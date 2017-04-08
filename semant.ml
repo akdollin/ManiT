@@ -142,8 +142,9 @@ let rec check_stmt env = function
     let stmtlist = List.map (fun s -> (check_stmt new_env s)) stmtlist in 
     new_env.scope.variables <- List.rev new_scope.variables;
     Block(stmtlist, envT)
+  | Ast.Fdecl(fdecl) -> Expr((Id("Fdecl ERROR"), Int)) 
   | Ast.Expr(e) -> Expr(check_expr env e)
-  | Ast.Func(f) -> Expr((Id("dummy"), Int)) (*ERROR*)
+  | Ast.Func(f) -> Expr((Id("Fcall ERROR"), Int)) (*ERROR*)
   | Ast.Return(e) -> Return(check_expr env e)
   | Ast.If(e, s1, s2) ->
     let (e, typ) = check_expr env e in
@@ -185,8 +186,8 @@ in: (bind_global list, functions, statements)
 out: same triple in SAST types, semantically checked.
 *)
 let check_program program =
-  let env = init_env
-  in let stmt_list = program.Ast.stmt_list
+  let env = init_env in
+  let stmt_list = program.Ast.stmt_list
   and let func_decl_list = program.Ast.func_decl_list 
   in (stmt_list, func_decl_list)
     

@@ -35,18 +35,20 @@ type stmt =
   | For of expr * expr * expr * stmt
   | While of expr * stmt
 
-type func_decl = {
+and 
+type fdecl = {
     (* fdecl no longer has typ or locals. formals no longer have type. see parser.
     typ : typ; 
     formals : bind list;
-    locals : bind list;
-    *)
+    locals : bind list; *)
     fname : string;
     formals : string list;
     body : stmt list;
   }
 
-(* created separate types to access from semant.ml *)
+type program = stmt list
+
+(* created separate types to access from semant.ml 
 type stmt_list = stmt list
 type func_decl_list = func_decl list
 
@@ -56,3 +58,4 @@ type program = bind list * func_decl list * stmt list
 *) 
 
 (* pretty print functions refactored to prettyprint.ml *)
+*)
