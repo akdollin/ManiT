@@ -38,13 +38,14 @@ program:
   stmts EOF { List.rev $1 }
 
 stmts:
-  stmt stmts { $1 :: $2 } /* order correct? */
+    /* nothing */  { [] }
+  | stmts stmt { $2 :: $1 }
 
 stmt:
     expr SEMI { Expr $1 }
   | RETURN SEMI { Return Noexpr } 
   | RETURN expr SEMI { Return $2 }
-  | LBRACE stmt_list RBRACE { Block(List.rev $2) }
+  | LBRACE stmts RBRACE { Block(List.rev $2) }
   | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
   | IF LPAREN expr RPAREN stmt ELSE stmt    { If($3, $5, $7) }
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt 
@@ -57,7 +58,7 @@ expr_opt:
   | expr          { $1 }
 
 fdecl:
-   ID LPAREN formals_opt RPAREN LBRACE stmt_list RBRACE
+   ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
    { { fname = $1;
        formals = $3;
        body = List.rev $6 } }
@@ -70,9 +71,6 @@ formal_list:
     ID { [$1] }
   | formal_list COMMA ID { $3 :: $1 }
 
-stmt_list:
-    /* nothing */  { [] }
-  | stmt_list stmt { $2 :: $1 }
 
 expr:
     INTLIT          { IntLit($1) }
