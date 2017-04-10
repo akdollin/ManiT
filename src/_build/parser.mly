@@ -8,7 +8,6 @@
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
-<<<<<<< HEAD
 %token RETURN IF ELSE FOR WHILE
 %token DEF
 /* token VOID */
@@ -16,11 +15,6 @@
 /* Literals */
 %token <int> INTLIT
 %token <string> STRINGLIT
-=======
-%token RETURN IF ELSE FOR WHILE INT BOOL VOID VARIABLE
-%token <int> LITERAL
-%token <string> STRING_LITERAL
->>>>>>> e46d939742eb7311ad1463652a9b07c8ec1257d3
 %token <string> ID
 %token EOF
 
@@ -41,42 +35,7 @@
 %%
 
 program:
-<<<<<<< HEAD
   stmts EOF { List.rev $1 }
-=======
-  decls EOF { $1 }
-
-decls:
-    /* nothing */ { [], [], [] }
- | decls vdecl { ($2 :: first $1), second $1, third $1 }
- | decls fdecl { first $1, ($2 :: second $1), third $1 }
- | decls stmt  { first $1, second $1, (third $1 @ [$2]) }
-
-fdecl:
-   typ ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
-     { { typ = $1;
-	 fname = $2;
-	 formals = $4;
-	 locals = List.rev $7;
-	 body = List.rev $8 } }
-
-formals_opt:
-    /* nothing */ { [] }
-  | formal_list   { List.rev $1 }
-
-formal_list:
-    typ ID                   { [($1,$2)] }
-  | formal_list COMMA typ ID { ($3,$4) :: $1 }
-
-typ:
-  INT { Int }
-  | BOOL { Bool }
-  | VOID { Void }
-
-vdecl_list:
-    /* nothing */    { [] }
-  | vdecl_list vdecl { $2 :: $1 }
->>>>>>> e46d939742eb7311ad1463652a9b07c8ec1257d3
 
 stmts:
     /* nothing */  { [] }

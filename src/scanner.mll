@@ -43,13 +43,8 @@ rule token = parse
 | "while"  { WHILE }
 | "return" { RETURN }
 
-<<<<<<< HEAD
 (* types *)
 (* type inference
-=======
-(* conditional *)
-| "var"	   { VARIABLE }
->>>>>>> e46d939742eb7311ad1463652a9b07c8ec1257d3
 | "int"    { INT }
 | "bool"   { BOOL }
 *)

@@ -21,11 +21,6 @@ clean :
 .PHONY : parse
 parse :
 	ocamlyacc -v parser.mly
-
-.PHONY : test
-test :
-	./manit.native < tests/helloworld.mt > output.ll
-	lli output.ll
 	
 # More detailed: build using ocamlc/ocamlopt + ocamlfind to locate LLVM
 
