@@ -6,14 +6,16 @@
 %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
+%token LBRACK RBRACK
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE
-%token DEF
+%token DEF GLOBAL
 /* token VOID */
 
 /* Literals */
 %token <int> INTLIT
+%token <float> FLOATLIT
 %token <string> STRINGLIT
 %token <string> ID
 %token EOF
@@ -52,6 +54,8 @@ stmt:
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | DEF fdecl { Fdecl($2) }
+  /* add struct here. */
+
 
 expr_opt: 
     /* nothing */ { Noexpr }
@@ -74,6 +78,7 @@ formal_list:
 
 expr:
     INTLIT          { IntLit($1) }
+  | FLOATLIT        { FloatLit($1) }
   | STRINGLIT   { StringLit(unescape $1) } 
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
@@ -95,6 +100,7 @@ expr:
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+  | GLOBAL ID ASSIGN expr { GlobalAsn($2, $4) } /* global asn */
 
 actuals_opt:
     /* nothing */ { [] }

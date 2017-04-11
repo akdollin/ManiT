@@ -7,18 +7,23 @@
 
 { open Parser }
 
+let digits = ['0'-'9']+
 let string = '"' (([' '-'!' '#'-'[' ']'-'~'])* as s) '"'
+let float = ['+' '-']? (digits '.' ['0'-'9']* | '.' digits) (['e' 'E'] (['+' '-']? digits))?
 
 rule token = parse
-  (* recursive call to eat white space *)
+(* recursive call to eat white space *)
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
 | "/*"     { comment lexbuf }           (* Comments *)
+
 | '('      { LPAREN }
 | ')'      { RPAREN }
 | '{'      { LBRACE }
 | '}'      { RBRACE }
 | ';'      { SEMI }
 | ','      { COMMA }
+| '['      { LBRACK } (* for array *)
+| ']'      { RBRACK }
 
 (* Operators *)
 | '+'      { PLUS }
@@ -43,22 +48,24 @@ rule token = parse
 | "while"  { WHILE }
 | "return" { RETURN }
 
-(* types *)
-(* type inference
+(* types: type inf
 | "int"    { INT }
 | "bool"   { BOOL }
 *)
 
-(* keyword for func decl. see parser.*)
-| "def"    { DEF }
+| "def"    { DEF } (* keyword for func decl. see parser.*)
+| "global" { GLOBAL } (* keyword for global assignment. see python *)
+ (* | "struct" { STRUCT } we can reuse def here. *)
 
-(* Literals for each type. Order matters if same token matches two regexes
+(* Literals for each type. 
+Order matters if same token matches two regexes
 need regex for types: char, float, array,
 *)
 | "true"   { TRUE }
 | "false"  { FALSE }
 | string   { STRINGLIT(s) }
-| ['0'-'9']+ as lxm { INTLIT(int_of_string lxm) }
+| digits as lxm { INTLIT(int_of_string lxm) }
+| float as lxm { FLOATLIT (float_of_string lxm) }
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }

@@ -1,2 +1,6 @@
-a = 2;
+a = false;
+a = true;
+
+b = 3;
+
 

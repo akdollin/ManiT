@@ -18,7 +18,7 @@ let translate (stmts) =
   let context = L.global_context () in
   let the_module = L.create_module context "ManiT"
 
-  and i64_t  = L.i64_type  context
+  (* and i64_t  = L.i64_type  context *)
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
@@ -26,7 +26,8 @@ let translate (stmts) =
   
   let ltype_of_typ = function
       A.Int -> i32_t
-    | A.Float -> i64_t
+    | A.Float -> i32_t
+    (* | A.Double -> i64_t *)
     | A.Bool -> i1_t
     | A.Void -> void_t  (* need void? see return types *)  
     | _ -> i32_t (* placed due to error. add string *) in
@@ -73,7 +74,7 @@ let translate (stmts) =
   (* functions *)
   let functions = [main_func]@fdecls in
 
-  (* init prototypes *)
+  (* build prototypes *)
   let prototypes =  
     let build_proto1 m fdecl =
       let name = fdecl.A.fname
@@ -83,7 +84,7 @@ let translate (stmts) =
     StringMap.add name (L.define_function name ftype the_module, fdecl) m in
   List.fold_left build_proto1 StringMap.empty functions in
   
-  (* restructured
+  (* restructured code.
     let build_proto2 m stmt = match stmt with
       A.Fdecl fdecl -> build_proto1 m fdecl
       | _ -> m
@@ -173,7 +174,8 @@ let translate (stmts) =
     (* Construct code for an expression; return its value *)
     let rec build_expr builder = function
         A.IntLit i, t -> L.const_int i32_t i
-      | A.FloatLit f, t -> L.const_float i64_t f 
+      | A.FloatLit f, t -> L.const_float i32_t f
+      (*| A.DoubleLit d, t -> L.const_double i64_t d *)
       | A.BoolLit b, t -> L.const_int i1_t (if b then 1 else 0)
       | A.StringLit s, t -> L.build_global_stringptr s "" builder
       (* | A.Noexpr -> L.const_int i32_t 0 *)

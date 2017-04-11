@@ -44,6 +44,7 @@ let (*rec*) find_built_in name = try
 let rec check_expr (env : environment) = function
   (* literals(value) *)
   Ast.IntLit(value) -> IntLit(value), Int
+  | Ast.FloatLit(value) -> FloatLit(value), Float
   | Ast.StringLit(value) -> StringLit(value), String
   | Ast.BoolLit(value) -> BoolLit(value), Bool
   (* ID(string) *)
@@ -118,7 +119,7 @@ let rec check_expr (env : environment) = function
 	(* this code can be cleaned up b/c value is same regardless of typ *)
 	match uop with
 	  Neg -> 
-	  if typ != Int && typ != Float 
+	  if typ != Int && typ != Float
 	  then raise (Failure("unary minus opeartion does not support this type ")) ;
 	  Unop(uop, (e, typ)), typ
 	| Not ->
