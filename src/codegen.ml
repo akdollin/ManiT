@@ -7,11 +7,12 @@ module S = Ast
 
 module StringMap = Map.Make(String)
 
-(* mutables *)
+(* mutables. unused.
 type mutables = {
   mutable prototypes : L.llvalue StringMap.t;
   mutable globals : L.llvalue StringMap.t;
 };;
+*)
 
 let translate (stmts) =
   let context = L.global_context () in
@@ -21,41 +22,32 @@ let translate (stmts) =
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
-  and void_t = L.void_type context in
+  and void_t = L.void_type context in (* void? *)
   
   let ltype_of_typ = function
       A.Int -> i32_t
     | A.Float -> i64_t
     | A.Bool -> i1_t
     | A.Void -> void_t  (* need void? see return types *)  
-    | _ -> i32_t (* due to error. add string *) in
+    | _ -> i32_t (* placed due to error. add string *) in
 
   (* Declare printf(), which the print built-in function will call *)
   let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func = L.declare_function "printf" printf_t the_module in
   
-  (*
-  (* main function *)
-  let main_func = {
-    A.fname = "main";
-    A.typ = A.Int;
-    A.formals = [];
-    A.body = [];
-    (* A.locals = []; *)
-  } in
-
-  let stmts = [main_func]@stmts in
-  *)
-
-  (* init globals *)
+  (* alloc globals *)
   let globals = 
     let rec build_global1 m e = match e with 
-      A.Assign (id, right_e), t -> 
+      (* alloc only if no global with same name was alloced previously *)
+      A.Assign (id, right_e), t -> (try StringMap.find id m; m with
+        Not_found -> 
         let m = build_global1 m right_e in
         let init = L.const_int (ltype_of_typ t) 0 in
-        StringMap.add id (L.define_global id init the_module) m 
+        StringMap.add id (L.define_global id init the_module) m )
+      (* skip other expr's *)
       | _ -> m
     in
+    (* iterate on expr stmts, skip other stmts *)
     let build_global2 m stmt = match stmt with 
         A.Expr e -> build_global1 m e
       | _ -> m
