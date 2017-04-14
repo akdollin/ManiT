@@ -100,6 +100,7 @@ let rec check_expr (env : environment) = function
       (
         match t1, t2 with
 	Int, Int -> Binop(e1, op, e2), Int
+        | Float, Float -> Binop(e1, op, e2), Float
 	(* specify our rules here.
 	Int, Int -> Binop(e1, op, e2), Int
 	x, y when x = y && x != Table && x != String -> Binop(e1, op, e2), x
@@ -141,10 +142,13 @@ let rec check_expr (env : environment) = function
  *)
 let rec check_stmt env = function
   Ast.Block(stmtlist) ->
+    (* sets a new scope to scope passed in *)
     let new_scope = { parent = Some(env.scope); variables = [] } in
     let new_env = { env with scope = new_scope} in (* how is "with" used here? *)
     (* populates variables and annotates exprs by calling check_stmt *)
+    (* adds new env to all stmts *)
     let stmtlist = List.map (fun s -> (check_stmt new_env s)) stmtlist in 
+    (* setting to *)
     new_env.scope.variables <- List.rev new_scope.variables;
     Block(stmtlist) (* new_env *)
   | Ast.Fdecl(fdecl) -> Expr((Id("Fdecl ERROR"), Int)) 

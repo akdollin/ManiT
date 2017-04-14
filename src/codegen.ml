@@ -206,7 +206,7 @@ let translate (stmts) =
         (* lookup id, store e` in s. stack alloced already. *)
         let e' = build_expr builder e in
           ignore (L.build_store e' (lookup id) builder); e'
-      | A.Call ("print", [e]), t | A.Call ("printb", [e]), t ->
+      | A.Call ("print", [e]), t | A.Call ("printb", [e]), t -> (* check the type, if float fomrat str, etc*)
           L.build_call printf_func [| int_format_str ; (build_expr builder e) |]
             "printf" builder
       | A.Call (f, act), t ->
