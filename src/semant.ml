@@ -38,6 +38,28 @@ let (*rec*) find_built_in name = try
   List.find (fun (s, _) -> s = name) built_in with Not_found -> raise Not_found
   (* see top of semant for built_in *)
     
+
+let have_duplicates compare lst = 
+  let sorted = List.sort compare lst in
+  match sorted with 
+    [] -> false
+    | hd::tl -> fst (List.fold_left (fun (b,last) next -> (b || last=next),next) (false,hd) tl)
+
+
+let get_func_decls_stmt stmt =
+  let rec get_func_decls_stmt_unchecked stmt=
+    match stmt with
+      Ast.Block(stmt_list) -> List.concat (List.map get_func_decls_stmt_unchecked stmt_list)
+      | Ast.Func(fdecl) -> [fdecl.fname,fdecl]
+      | _ -> []
+  in
+  let func_decls = get_func_decls_stmt_unchecked stmt in
+  (*Make sure that there are no duplicates*)
+  let names = List.map fst func_decls in
+  if (have_duplicates String.compare names) then
+    raise (Failure "Duplicate function names declared!")
+  else
+    func_decls
 (*check_expr: core type-matching function that recursively annotates type of each expr.
   in : environment
   out : a type in SAST *)
@@ -195,8 +217,10 @@ in: (bind_global list, functions, statements)
 out: same triple in SAST types, semantically checked.
 *)
 let check_program program =
+  let func_decls = get_func_decls_stmt program.Ast.statementList in
+
   let env = init_env in
-  let stmts = List.map (fun _stmt -> check_stmt env _stmt) program
+  let stmts = List.map (fun _stmt -> check_stmt env _stmt) program.Ast.statementList
   in stmts
 (*
   let env = init_env in

@@ -49,7 +49,12 @@ fdecl = {
     body : stmt list;
   }
 
-type program = stmt list
+(* type program = stmt list
+ *)
+type program = {
+  statementList : stmt list;
+}
+
 
 (* created separate types to access from semant.ml 
 type stmt_list = stmt list
