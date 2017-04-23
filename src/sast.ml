@@ -2,11 +2,6 @@
 semant.ml takes AST and produces SAST while checking semantics 
 *)
 
-(* need to add literal types:
-float, array, etc 
-is Void needed here? used in codegen *)
-type t = Int | String | Bool | Float | Void
-
 type expr_det =
     IntLit of int
   | FloatLit of float
@@ -18,7 +13,8 @@ type expr_det =
   | Call of string * expr_t list
   | Assign of string * expr_t
   (* add array access here *)
-  and expr_t = expr_det * t (* typ comes first to match use in codegen *)
+  
+  and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
 
 type stmt_t =
     Block of stmt_t list
@@ -27,25 +23,28 @@ type stmt_t =
   | If of expr_t * stmt_t * stmt_t
   | For of expr_t * expr_t * expr_t * stmt_t
   | While of expr_t * stmt_t
-  | Fdecl of func_decl_t (* need to attach type instead of placing in struct? *)
+  | Func of func_t 
 
-  and func_decl_t = {
-    typ : t; (* ERROR: ok to introduce typ field? *)
+  and func_t = {
+    typ : Ast.typ; 
     fname : string;
-    formals : (string * t) list; (* where are typs? *)
-    body : stmt_t list;
+    formals : (Ast.typ * string) list; 
+    body : stmt_t list; (* need typed statements *)
    }
 
 type symbol_table = {
   parent : symbol_table option;
-  mutable variables: (string * t) list
+  mutable variables: (string * Ast.typ) list
 }
 
 type environment = {
   scope: symbol_table;
-  return: t option
+  (* return: t option. can check manually. *)
 }
 
-
+type global_environment = {
+  mutable funcs: func_t list;
+  (* add globals here? design choice. global scope is the only scope w/o parent. *)
+}
 
 type program = stmt_t list

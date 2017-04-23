@@ -2,8 +2,8 @@
 takes SAST and generates LLVM IR *)
 
 module L = Llvm
-module A = Sast
-module S = Ast
+module S = Sast
+module A = Ast
 
 module StringMap = Map.Make(String)
 
@@ -19,38 +19,58 @@ let translate (stmts) =
   let the_module = L.create_module context "ManiT"
 
   (* and i64_t  = L.i64_type  context *)
+  and f32_t  = L.float_type context
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
   and void_t = L.void_type context in (* void? *)
   
+  (* Declare printf(), which the print built-in function will call *)
+  let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
+  let printf_func = L.declare_function "printf" printf_t the_module in
+
   let ltype_of_typ = function
       A.Int -> i32_t
-    | A.Float -> i32_t
-    (* | A.Double -> i64_t *)
+    | A.Float -> f32_t
+    | A.String -> i8_t (* ptr? *)
     | A.Bool -> i1_t
     | A.Void -> void_t  (* need void? see return types *)  
     | _ -> i32_t (* placed due to error. add string *) in
 
-  (* Declare printf(), which the print built-in function will call *)
-  let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
-  let printf_func = L.declare_function "printf" printf_t the_module in
+  (* init value for each type
+  let init_val = function
+      A.Int -> 0
+    | A.Float -> 0.0
+    | A.Bool -> false
+    | A.String -> "TEST: codegen init_val"
+    | _ -> 777 (*for error checking *) in
+  *)  
   
+  let init_llvalue id t =
+    let ltype = ltype_of_typ t in
+    match t with 
+      A.Int | A.Bool -> L.const_int ltype 0
+    | A.Float -> L.const_float ltype 0.0
+    | A.String -> L.const_pointer_null i8_t
+    | _ -> L.const_int ltype 777 (* for errors *) in 
+
   (* alloc globals *)
   let globals = 
     let rec build_global1 m e = match e with 
       (* alloc only if no global with same name was alloced previously *)
-      A.Assign (id, right_e), t -> (try StringMap.find id m; m with
+      S.Assign (id, right_e), t -> (try StringMap.find id m; m with
         Not_found -> 
         let m = build_global1 m right_e in
-        let init = L.const_int (ltype_of_typ t) 0 in
+        (* factored out to add other types. see init_llvalue *)
+        (* let init = L.const_float (ltype_of_typ t) (init_val t) in *)
+        let init = init_llvalue id t in
         StringMap.add id (L.define_global id init the_module) m )
       (* skip other expr's *)
       | _ -> m
     in
     (* iterate on expr stmts, skip other stmts *)
     let build_global2 m stmt = match stmt with 
-        A.Expr e -> build_global1 m e
+        S.Expr e -> build_global1 m e
       | _ -> m
     in
   List.fold_left build_global2 StringMap.empty stmts in
@@ -58,17 +78,17 @@ let translate (stmts) =
   (* split fdecls and stmts. store stmts in main's body *)
   let (fdecls, main_body) = 
     let split (fdecls, main_body) stmt = match stmt with (* why func_decl_t?*) 
-      A.Fdecl fdecl -> fdecls@[fdecl], main_body
+      S.Func fdecl -> fdecls@[fdecl], main_body
     | _ -> fdecls, main_body@[stmt]
     and init = ([],[]) in
   List.fold_left split init stmts in 
   
   (* main_func *)
   let main_func = {
-    A.fname = "main";
-    A.typ = A.Int;
-    A.formals = [];
-    A.body = main_body
+    S.fname = "main";
+    S.typ = A.Int;
+    S.formals = [];
+    S.body = main_body
   } in
 
   (* functions *)
@@ -77,10 +97,10 @@ let translate (stmts) =
   (* build prototypes *)
   let prototypes =  
     let build_proto1 m fdecl =
-      let name = fdecl.A.fname
+      let name = fdecl.S.fname
       and formal_types = 
-      Array.of_list (List.map (fun (_, t) -> ltype_of_typ t) fdecl.A.formals) in 
-        let ftype = L.function_type (ltype_of_typ fdecl.A.typ) formal_types in
+      Array.of_list (List.map (fun (t, _) -> ltype_of_typ t) fdecl.S.formals) in 
+        let ftype = L.function_type (ltype_of_typ fdecl.S.typ) formal_types in
     StringMap.add name (L.define_function name ftype the_module, fdecl) m in
   List.fold_left build_proto1 StringMap.empty functions in
   
@@ -96,7 +116,7 @@ let translate (stmts) =
   (* Fill in the body of the given function *)
   let rec build_function fdecl =
     (* search prototype and get builder *)
-    let (the_function, _ ) = StringMap.find fdecl.A.fname prototypes in
+    let (the_function, _ ) = StringMap.find fdecl.S.fname prototypes in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
     (* build format stringptr at top for print calls. see lec notes *)
@@ -104,37 +124,37 @@ let translate (stmts) =
 
     (* formals *)
     let formals = 
-      let add_formal m (id, t) param = L.set_value_name id param;
+      let add_formal m (t, id) param = L.set_value_name id param;
 	(* allocate the formal and store param *)
         let formal = L.build_alloca (ltype_of_typ t) id builder in
       ignore (L.build_store param formal builder);
       StringMap.add id formal m in
     (* expr below evaluates to a map. see fold_left2 *)
-    List.fold_left2 add_formal StringMap.empty fdecl.A.formals
+    List.fold_left2 add_formal StringMap.empty fdecl.S.formals
       (Array.to_list (L.params the_function)) in
 
     (* add locals to formals *)
     let locals =
       let rec f1 m e = match e with
-        A.Assign (id, right_e), t ->
+        S.Assign (id, right_e), t ->
           let m = f1 m right_e in
           let local_var  = L.build_alloca (ltype_of_typ t) id builder in
         StringMap.add id local_var m
         | _ -> m
       in
       let rec f2 m stmt = match stmt with
-          A.Block sl -> f2 m stmt
-        | A.Return e -> f1 m e
-        | A.Expr e -> ( match fdecl.A.fname with 
+          S.Block sl -> f2 m stmt
+        | S.Return e -> f1 m e
+        | S.Expr e -> ( match fdecl.S.fname with 
             (* dont create locals for expr stmts in main b/c they are globals *)
             "main" -> m 
             | _    -> f1 m e )
-        | A.If (p, t, e) -> List.fold_left f2 m [t; e]
-        | A.While (p, b)-> f2 m stmt
-        | A.For (e1, e2, e3, b) -> List.fold_left f1 m [e1; e2; e3]
+        | S.If (p, t, e) -> List.fold_left f2 m [t; e]
+        | S.While (p, b)-> f2 m stmt
+        | S.For (e1, e2, e3, b) -> List.fold_left f1 m [e1; e2; e3]
         | _ -> m
       in
-    List.fold_left f2 formals fdecl.A.body in
+    List.fold_left f2 formals fdecl.S.body in
 
     (*
     (* helper: allocates a new local (and global?) depending on fdecl. *)
@@ -173,46 +193,46 @@ let translate (stmts) =
 
     (* Construct code for an expression; return its value *)
     let rec build_expr builder = function
-        A.IntLit i, t -> L.const_int i32_t i
-      | A.FloatLit f, t -> L.const_float i32_t f
+        S.IntLit i, t -> L.const_int i32_t i
+      | S.FloatLit f, t -> L.const_float f32_t f
       (*| A.DoubleLit d, t -> L.const_double i64_t d *)
-      | A.BoolLit b, t -> L.const_int i1_t (if b then 1 else 0)
-      | A.StringLit s, t -> L.build_global_stringptr s "" builder
+      | S.BoolLit b, t -> L.const_int i1_t (if b then 1 else 0)
+      | S.StringLit s, t -> L.build_global_string s "" builder
       (* | A.Noexpr -> L.const_int i32_t 0 *)
-      | A.Id s, t -> L.build_load (lookup s) s builder (* R.H.S lookup *)
-      | A.Binop (e1, op, e2), t ->
+      | S.Id s, t -> L.build_load (lookup s) s builder (* R.H.S lookup *)
+      | S.Binop (e1, op, e2), t ->
           let e1' = build_expr builder e1
           and e2' = build_expr builder e2 in
           (match op with
-            S.Add     -> L.build_add
-          | S.Sub     -> L.build_sub
-          | S.Mult    -> L.build_mul
-          | S.Div     -> L.build_sdiv
-          | S.And     -> L.build_and
-          | S.Or      -> L.build_or
-          | S.Equal   -> L.build_icmp L.Icmp.Eq
-          | S.Neq     -> L.build_icmp L.Icmp.Ne
-          | S.Less    -> L.build_icmp L.Icmp.Slt
-          | S.Leq     -> L.build_icmp L.Icmp.Sle
-          | S.Greater -> L.build_icmp L.Icmp.Sgt
-          | S.Geq     -> L.build_icmp L.Icmp.Sge
+            A.Add     -> L.build_add
+          | A.Sub     -> L.build_sub
+          | A.Mult    -> L.build_mul
+          | A.Div     -> L.build_sdiv
+          | A.And     -> L.build_and
+          | A.Or      -> L.build_or
+          | A.Equal   -> L.build_icmp L.Icmp.Eq
+          | A.Neq     -> L.build_icmp L.Icmp.Ne
+          | A.Less    -> L.build_icmp L.Icmp.Slt
+          | A.Leq     -> L.build_icmp L.Icmp.Sle
+          | A.Greater -> L.build_icmp L.Icmp.Sgt
+          | A.Geq     -> L.build_icmp L.Icmp.Sge
           ) e1' e2' "tmp" builder
-      | A.Unop(op, e), t ->
+      | S.Unop(op, e), t ->
           let e' = build_expr builder e in
           (match op with
-            S.Neg     -> L.build_neg
-          | S.Not     -> L.build_not) e' "tmp" builder
-      | A.Assign (id, e), t ->
+            A.Neg     -> L.build_neg
+          | A.Not     -> L.build_not) e' "tmp" builder
+      | S.Assign (id, e), t ->
         (* lookup id, store e` in s. stack alloced already. *)
         let e' = build_expr builder e in
           ignore (L.build_store e' (lookup id) builder); e'
-      | A.Call ("print", [e]), t | A.Call ("printb", [e]), t -> (* check the type, if float fomrat str, etc*)
+      | S.Call ("print", [e]), t | S.Call ("printb", [e]), t -> (* check the type, if float fomrat str, etc*)
           L.build_call printf_func [| int_format_str ; (build_expr builder e) |]
             "printf" builder
-      | A.Call (f, act), t ->
+      | S.Call (f, act), t ->
          let (fdef, fdecl) = StringMap.find f prototypes in
          let actuals = List.rev (List.map (build_expr builder) (List.rev act)) in
-         let result = (match fdecl.A.typ with A.Void -> ""
+         let result = (match fdecl.S.typ with A.Void -> ""
                                             | _ -> f ^ "_result") in
          L.build_call fdef (Array.of_list actuals) result builder
     in
@@ -228,12 +248,12 @@ let translate (stmts) =
     (* Build the code for the given statement; return the builder for
        the statement's successor *)
     let rec build_stmt builder = function
-        A.Block sl -> List.fold_left build_stmt builder sl
-      | A.Expr e -> ignore (build_expr builder e); builder
-      | A.Return e -> ignore (match fdecl.A.typ with
+        S.Block sl -> List.fold_left build_stmt builder sl
+      | S.Expr e -> ignore (build_expr builder e); builder
+      | S.Return e -> ignore (match fdecl.S.typ with
           A.Void -> L.build_ret_void builder
         | _ -> L.build_ret (build_expr builder e) builder); builder
-      | A.If (predicate, then_stmt, else_stmt) ->
+      | S.If (predicate, then_stmt, else_stmt) ->
          let bool_val = build_expr builder predicate in
          let merge_bb = L.append_block context "merge" the_function in
 
@@ -248,7 +268,7 @@ let translate (stmts) =
          ignore (L.build_cond_br bool_val then_bb else_bb builder);
          L.builder_at_end context merge_bb
 
-      | A.While (predicate, body) ->
+      | S.While (predicate, body) ->
           let pred_bb = L.append_block context "while" the_function in
           ignore (L.build_br pred_bb builder);
 
@@ -263,8 +283,8 @@ let translate (stmts) =
           ignore (L.build_cond_br bool_val body_bb merge_bb pred_builder);
           L.builder_at_end context merge_bb
 
-      | A.For (e1, e2, e3, body) -> build_stmt builder
-            ( A.Block [A.Expr e1 ; A.While (e2, A.Block [body ; A.Expr e3]) ] )
+      | S.For (e1, e2, e3, body) -> build_stmt builder
+            ( S.Block [S.Expr e1 ; S.While (e2, S.Block [body ; S.Expr e3]) ] )
     in
 
     (* need to handle main separately to use this code.
@@ -279,20 +299,16 @@ let translate (stmts) =
     *)
 
     (* build code for each stmt in body. Cast to A.Block? *)
-    let builder = build_stmt builder (A.Block fdecl.A.body) in
+    let builder = build_stmt builder (S.Block fdecl.S.body) in
     
     (* Add a return if the last block falls off the end *)
-    add_terminal builder (match fdecl.A.typ with
+    add_terminal builder (match fdecl.S.typ with
         A.Void -> L.build_ret_void
       | t -> L.build_ret (L.const_int (ltype_of_typ t) 0))
   in 
 
   List.iter build_function functions;
   the_module
-
-
-
-
 
 
 (**************************** MicoC ****************************

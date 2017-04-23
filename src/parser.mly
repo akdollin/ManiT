@@ -10,7 +10,9 @@
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE
-%token DEF GLOBAL
+%token DEF GLOBAL STRUCT
+
+%token INT FLOAT BOOL STRING VOID
 /* token VOID */
 
 /* Literals */
@@ -53,7 +55,7 @@ stmt:
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt 
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
-  | DEF fdecl { Fdecl($2) }
+  | DEF func { Func($2) }
   /* add struct here. */
 
 
@@ -61,20 +63,27 @@ expr_opt:
     /* nothing */ { Noexpr }
   | expr          { $1 }
 
-fdecl:
-   ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
-   { { fname = $1;
-       formals = $3;
-       body = List.rev $6 } }
+func:
+   typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
+   { { typ = $1;
+       fname = $2;
+       formals = $4;
+       body = List.rev $7 } }
+
+typ:
+    INT { Int }
+  | BOOL { Bool }
+  | FLOAT { Float }
+  | STRING { String }
+  | VOID   { Void }
 
 formals_opt:
     /* nothing */ { [] }
   | formal_list   { List.rev $1 }
 
 formal_list:
-    ID { [$1] }
-  | formal_list COMMA ID { $3 :: $1 }
-
+    typ ID { [($1, $2)] }
+  | formal_list COMMA typ ID { ($3, $4)  :: $1 }
 
 expr:
     INTLIT          { IntLit($1) }

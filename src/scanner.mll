@@ -22,7 +22,7 @@ rule token = parse
 | '}'      { RBRACE }
 | ';'      { SEMI }
 | ','      { COMMA }
-| '['      { LBRACK } (* for array *)
+| '['      { LBRACK } 
 | ']'      { RBRACK }
 
 (* Operators *)
@@ -48,14 +48,16 @@ rule token = parse
 | "while"  { WHILE }
 | "return" { RETURN }
 
-(* types: type inf
+(* half-way type inf *)
 | "int"    { INT }
 | "bool"   { BOOL }
-*)
+| "float"  { FLOAT }
+| "string" { STRING }
+| "void"   { VOID }
 
-| "def"    { DEF } (* keyword for func decl. see parser.*)
+| "def"    { DEF }    (* keyword for func decl. see parser.*)
 | "global" { GLOBAL } (* keyword for global assignment. see python *)
- (* | "struct" { STRUCT } we can reuse def here. *)
+| "struct" { STRUCT } 
 
 (* Literals for each type. 
 Order matters if same token matches two regexes

@@ -1,6 +1,9 @@
-a = false;
-a = true;
+a = 1;
 
-b = 3;
+def int foo (int b)
+{
+  b = 3;
+  return b;
+}
 
-
+foo(a);
