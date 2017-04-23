@@ -120,7 +120,9 @@ let translate (stmts) =
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
     (* build format stringptr at top for print calls. see lec notes *)
-    let int_format_str = L.build_global_stringptr "%s\n" "fmt" builder in
+    let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder
+      and float_format_str = L.build_global_stringptr "%f\n" "fmt" builder 
+      and string_format_str = L.build_global_stringptr "%s\n" "fmt" builder in
 
     (* formals *)
     let formals = 
