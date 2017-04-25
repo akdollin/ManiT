@@ -14,7 +14,9 @@ type mutables = {
 };;
 *)
 
+
 let translate (stmts) =
+
   let context = L.global_context () in
   let the_module = L.create_module context "ManiT"
 
@@ -136,27 +138,38 @@ let translate (stmts) =
       (Array.to_list (L.params the_function)) in
 
     (* add locals to formals *)
+    (* not in main => local *)
+    (* in main but in block => local *)
+    (* in main but not in block => global *)
     let locals =
-      let rec f1 m e = match e with
-        S.Assign (id, right_e), t ->
-          let m = f1 m right_e in
-          let local_var  = L.build_alloca (ltype_of_typ t) id builder in
-        StringMap.add id local_var m
-        | _ -> m
+      (* whether current scope is in a block. *)
+      let rec build_local_e in_block map expr = 
+        if in_block == true then match expr with
+          S.Assign (id, right_e), typ ->
+            let map =  build_local_e true map right_e in
+            let local_var  = L.build_alloca (ltype_of_typ typ) id builder in
+            StringMap.add id local_var map
+          | _ -> map (* non asn stmt should not declare new vars *)
+        else map (* if not in a block, global was created already. *)
       in
-      let rec f2 m stmt = match stmt with
-          S.Block sl -> f2 m stmt
-        | S.Return e -> f1 m e
-        | S.Expr e -> ( match fdecl.S.fname with 
-            (* dont create locals for expr stmts in main b/c they are globals *)
-            "main" -> m 
-            | _    -> f1 m e )
-        | S.If (p, t, e) -> List.fold_left f2 m [t; e]
-        | S.While (p, b)-> f2 m stmt
-        | S.For (e1, e2, e3, b) -> List.fold_left f1 m [e1; e2; e3]
-        | _ -> m
+      (* add locals in stmts *)
+      let rec build_local_s in_block map stmt = match stmt with
+          S.Block stmt_list -> List.fold_left (fun map stmt -> build_local_s true map stmt) map stmt_list
+        | S.If (pred, then_s, else_s) -> List.fold_left (fun map stmt -> build_local_s true map stmt) map [then_s; else_s]
+        | S.While (pred, block) -> build_local_s true map block (* var declared in predicate ok? *)
+        | S.For (e1, e2, e3, block) -> 
+            let map = List.fold_left (fun map expr -> build_local_e true map expr) map [e1; e2; e3] in
+            build_local_s true map block
+        | S.Return expr -> build_local_e in_block map expr (* in_block follows that of parent *)
+        | S.Expr expr -> build_local_e in_block map expr
+        | _ -> map
       in
-    List.fold_left f2 formals fdecl.S.body in
+      let find_in_block = function
+          "main" -> false
+        | _ -> true
+      in
+      let in_block = find_in_block fdecl.S.fname in
+      List.fold_left (fun map stmt -> build_local_s in_block map stmt) formals fdecl.S.body in
 
     (*
     (* helper: allocates a new local (and global?) depending on fdecl. *)

@@ -46,7 +46,7 @@ let rec check_expr (env : environment) = function
 
   (* Variable access *)
   | Ast.Id(name) -> let (name, typ) = try find_var env.scope name with 
-      Not_found -> raise (Failure("undeclared identifier " ^ name)) in 
+      Not_found -> raise (Failure("undeclared identifier !!!!" ^ name)) in 
       Id(name), typ
   
   (* Assignment(string, expr)
@@ -188,19 +188,19 @@ let rec check_stmt env = function
 
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
-    let (e, typ) = check_expr env e in
-    (if typ != Bool then raise (Failure ("If stmt does not support this type")));
-    If((e, typ), check_stmt env s1, check_stmt env s2)
+      let (e, typ) = check_expr env e in
+      (if typ != Bool then raise (Failure ("If stmt does not support this type")));
+      If((e, typ), check_stmt env s1, check_stmt env s2)
   | Ast.While(e, s) ->
-    let (e, typ) = check_expr env e in
-    (if typ != A.Bool then raise (Failure ("While stmt does not support this type")));
-    While((e, typ), check_stmt env s)
+      let (e, typ) = check_expr env e in
+      (if typ != A.Bool then raise (Failure ("While stmt does not support this type")));
+      While((e, typ), check_stmt env s)
   | Ast.For(e1, e2, e3, s) -> 
-    let (e1, typ1) = check_expr env e1 (*need to have empty expr *)
-    and (e2, typ2) = check_expr env e2
-    and (e3, typ3) = check_expr env e3 in
-    (if typ2 != Bool then raise(Failure("For stmt does not support this type")));
-    For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
+      let (e1, typ1) = check_expr env e1 (*need to have empty expr *)
+      and (e2, typ2) = check_expr env e2
+      and (e3, typ3) = check_expr env e3 in
+      (if typ2 != Bool then raise(Failure("For stmt does not support this type")));
+      For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
   | _ -> raise(Failure("unchecked stmts"))
 
 (* environment is a record with scope and return type. 
