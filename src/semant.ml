@@ -9,6 +9,9 @@ let built_in = [("print", A.String, A.Int)]
 
 let global_env = { funcs = [] }
 
+(* this is the hash table used to store structs *)
+let struct_types:(string, A.struc) Hashtbl.t = Hashtbl.create 10
+
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
       t1, t2 when t1 = t2 -> true

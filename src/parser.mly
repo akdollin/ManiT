@@ -10,7 +10,7 @@
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE
-%token DEF GLOBAL STRUCT
+%token DEF GLOBAL STRUCT DOT
 
 %token INT FLOAT BOOL STRING VOID
 /* token VOID */
@@ -32,6 +32,7 @@
 %left PLUS MINUS
 %left TIMES DIVIDE
 %right NOT NEG
+%right DOT
 
 %start program
 %type <Ast.program> program
@@ -56,12 +57,16 @@ stmt:
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | DEF func { Func($2) }
-  /* add struct here. */
+  | STRUCT struct_dec { Struc($2) }
 
 
 expr_opt: 
     /* nothing */ { Noexpr }
   | expr          { $1 }
+
+struct_dec: 
+  ID LBRACE expr_list RBRACE SEMI {{
+    sname = $1; attributes = List.rev $3; }} 
 
 func:
    typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
@@ -85,6 +90,13 @@ formal_list:
     typ ID { [($1, $2)] }
   | formal_list COMMA typ ID { ($3, $4)  :: $1 }
 
+expr_list:
+  { [] }
+  | expr_list  proper_expr { $2::$1 }
+
+proper_expr:
+    expr SEMI { Expr $1 }
+
 expr:
     INTLIT          { IntLit($1) }
   | FLOATLIT        { FloatLit($1) }
@@ -104,6 +116,7 @@ expr:
   | expr GEQ    expr { Binop($1, Geq,   $3) }
   | expr AND    expr { Binop($1, And,   $3) }
   | expr OR     expr { Binop($1, Or,    $3) }
+  | expr DOT    expr { Struct_access($1, $3)}
   | MINUS expr %prec NEG { Unop(Neg, $2) } 
   | NOT expr         { Unop(Not, $2) }
   | ID ASSIGN expr   { Assign($1, $3) }

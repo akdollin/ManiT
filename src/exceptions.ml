@@ -1,0 +1,1 @@
+exception ErrCatch of string

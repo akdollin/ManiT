@@ -40,6 +40,8 @@ rule token = parse
 | "&&"     { AND }
 | "||"     { OR }
 | "!"      { NOT }
+| "."      { DOT }
+
 
 (* branch control *)
 | "if"     { IF }
