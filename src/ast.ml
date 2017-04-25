@@ -6,7 +6,7 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Float | String | Void | Struct_typ of string
+type typ = Int | Bool | Float | String | Void 
 (* need to check if formals have Void typ *)
 type bind = typ * string
 
@@ -44,7 +44,6 @@ func = {
 (*     struc_method : bool;
  *)}
 and
-
 strc = {
   sname : string;
   attributes : bind list;
