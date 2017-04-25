@@ -12,6 +12,15 @@ let global_env = { funcs = [] }
 (* this is the hash table used to store structs *)
 let struct_types:(string, A.struc) Hashtbl.t = Hashtbl.create 10
 
+(* Only call on struct or eventually array access *)
+let rec string_id_expr expr = 
+  match expr with
+    A.Id(s) -> s
+  | A.Struct_access(e1, _) -> string_id_expr e1 
+  | A.Call(s,_) -> s
+  | _ -> raise (Exceptions.ErrCatch "string_id_expr")
+
+
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
       t1, t2 when t1 = t2 -> true
@@ -213,6 +222,7 @@ let init_env =
   let init_scope  = {
     parent = None;
     variables = [];
+    in_struct_method = false;
   }
   in { scope = init_scope; }
 
