@@ -241,8 +241,25 @@ let translate (stmts) =
         (* lookup id, store e` in s. stack alloced already. *)
         let e' = build_expr builder e in
           ignore (L.build_store e' (lookup id) builder); e'
-      | S.Call ("print", [e]), t | S.Call ("printb", [e]), t -> (* check the type, if float fomrat str, etc*)
-          L.build_call printf_func [| int_format_str ; (build_expr builder e) |]
+      | S.Call ("print", [e]), t ->
+          (*let t = (* find the type of it *) in*)
+          let var = build_expr builder e in
+          match var with
+          | S.IntLit var, t ->
+            L.build_call printf_func [| int_format_str ; (var) |]
+            "printf" builder
+          | S.FloatLit var, t ->
+            L.build_call printf_func [| int_format_str ; (var) |]
+            "printf" builder
+          | S.BoolLit var, t ->
+            let tr = L.build_global_stringptr "true" "" llbuilder in
+            let fa = L.build_global_stringptr "false" "" llbuilder in
+            if (L.is_null var) then L.build_call printf_func [| string_format_str ; (tr) |]
+            "printf" builder
+            else L.build_call printf_func [| string_format_str ; (fa) |]
+            "printf" builder
+          | S.StringLit var, t ->
+            L.build_call printf_func [| string_format_str ; (var) |]
             "printf" builder
       | S.Call (f, act), t ->
          let (fdef, fdecl) = StringMap.find f prototypes in
