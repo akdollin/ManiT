@@ -219,7 +219,7 @@ let rec check_stmt env = function
   | Ast.Struc(strc) ->
     (match check_struct strc.sname with
       false ->
-        let struct_func = List.map (fun stmt -> check_stmt env func) strc.funcs in
+        let struct_func = List.map (fun stmt -> check_stmt env stmt) strc.funcs in
         let sast_strc = { sname = strc = strc.sname; attributes = strc.attributes; funcs = struct_func } in
 (*         struct_list.structs <- (sast_strc :: struct_list.structs);
  *)        Hashtbl.add structs_hash strc.sname sast_strc;
