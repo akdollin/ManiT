@@ -217,7 +217,7 @@ let rec check_stmt env = function
         Func(sast_func)
     | true -> raise(Failure("cannot redeclare function with same name")); )
   | Ast.Struc(strc) ->
-    (match check_struct strc strc.sname with
+    (match check_struct strc.sname with
       false ->
         let struct_func = List.map (fun stmt -> check_stmt env func) strc.funcs in
         let sast_strc = { sname = strc = strc.sname; attributes = strc.attributes; funcs = struct_func } in
