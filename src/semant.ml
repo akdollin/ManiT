@@ -8,6 +8,7 @@ module StringMap = Map.Make(String)
 let built_in = [("print", A.String, A.Int)]
 
 let global_env = { funcs = [] }
+
 let struct_list = { structs = [] }
 
 (* this is the hash table used to store structs *)
@@ -224,7 +225,7 @@ let rec check_stmt env = function
         let struct_func = List.map (fun stmt -> check_stmt env func) strc.funcs in
         let sast_strc = { sname = strc = strc.sname; attributes = strc.attributes; funcs = struct_func } in
         struct_list.structs <- (sast_strc :: struct_list.structs);
-        Hashtbl.add structs_hash strc.sname;
+        Hashtbl.add structs_hash strc.sname sast_strc;
         Struc(sast_strc)
     | true -> raise(Failure("duplicate struct")); )
   (* conditionals *)
