@@ -221,11 +221,10 @@ let rec check_stmt env = function
   | Ast.Struc(strc) ->
     (match exist_struct strc strc.sname with
       false ->
-        ignore (List.map (fun s -> (dub_check(fun s -> "duplicate struct field " ^ s) (List.map (fun s -> snd s) s.A.attributes))) struct_list);
-        let checked_structs = Hashtbl.add structs_hash strc.sname;
         let struct_func = List.map (fun stmt -> check_stmt env func) strc.funcs in
         let sast_strc = { sname = strc = strc.sname; attributes = strc.attributes; funcs = struct_func } in
         struct_list.structs <- (sast_strc :: struct_list.structs);
+        Hashtbl.add structs_hash strc.sname;
         Struc(sast_strc)
     | true -> raise(Failure("duplicate struct")); )
   (* conditionals *)
