@@ -34,7 +34,7 @@ type stmt =
   | While of expr * stmt
   | Func of func
   | Struc of strc
- 
+and 
 func = {
     typ : typ;
     fname : string;
