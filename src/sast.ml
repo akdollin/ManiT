@@ -34,7 +34,7 @@ type stmt_t =
     body : stmt_t list; (* need typed statements *)
    }
   and strc_t = {
-    sname : Ast.string;
+    sname : string;
     attributes : (Ast.typ * string) list;
     funcs : func_t list;
 }
