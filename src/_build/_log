@@ -1,0 +1,152 @@
+### Starting build.
+# Target: manit.ml.depends, tags: { extension:ml, file:manit.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules manit.ml > manit.ml.depends
+# Target: codegen.ml.depends, tags: { extension:ml, file:codegen.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules codegen.ml > codegen.ml.depends
+# Target: ast.ml.depends, tags: { extension:ml, file:ast.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules ast.ml > ast.ml.depends
+# Target: sast.ml.depends, tags: { extension:ml, file:sast.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules sast.ml > sast.ml.depends
+# Target: ast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o ast.cmo ast.ml
+# Target: sast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:sast.cmo, file:sast.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o sast.cmo sast.ml
+# Target: parser.mly, tags: { extension:mly, file:parser.mly, infer, ocaml, ocamlyacc, package(llvm), package(llvm.analysis), parser, quiet }
+/usr/bin/ocamlyacc parser.mly
+# Target: parser.mli.depends, tags: { extension:mli, file:parser.mli, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules parser.mli > parser.mli.depends
+# Target: scanner.mll, tags: { extension:mll, file:scanner.mll, lexer, ocaml, ocamllex, package(llvm), package(llvm.analysis), quiet }
+/usr/bin/ocamllex -q scanner.mll
+# Target: scanner.ml.depends, tags: { extension:ml, file:scanner.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules scanner.ml > scanner.ml.depends
+# Target: parser.cmi, tags: { byte, compile, extension:mli, file:parser.mli, interf, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o parser.cmi parser.mli
+# Target: semant.ml.depends, tags: { extension:ml, file:semant.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules semant.ml > semant.ml.depends
+# Target: exceptions.ml.depends, tags: { extension:ml, file:exceptions.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules exceptions.ml > exceptions.ml.depends
+# Target: exceptions.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:exceptions.cmo, file:exceptions.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o exceptions.cmo exceptions.ml
+# Target: codegen.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:codegen.cmo, file:codegen.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o codegen.cmo codegen.ml
++ ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o codegen.cmo codegen.ml
+File "codegen.ml", line 197, characters 33-2102:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+((Struct_create _|Struct_access (_, _, _, _)), _)
+File "codegen.ml", line 252, characters 33-1781:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Func _
+File "codegen.ml", line 117, characters 10-24:
+Warning 39: unused rec flag.
+File "codegen.ml", line 49, characters 19-21:
+Warning 27: unused variable id.
+File "codegen.ml", line 61, characters 40-59:
+Warning 10: this expression should have type unit.
+File "codegen.ml", line 124, characters 10-26:
+Warning 26: unused variable float_format_str.
+File "codegen.ml", line 125, characters 10-27:
+Warning 26: unused variable string_format_str.
+File "codegen.ml", line 148, characters 18-20:
+Warning 27: unused variable sl.
+File "codegen.ml", line 154, characters 16-17:
+Warning 27: unused variable p.
+File "codegen.ml", line 155, characters 19-20:
+Warning 27: unused variable p.
+File "codegen.ml", line 155, characters 22-23:
+Warning 27: unused variable b.
+File "codegen.ml", line 156, characters 29-30:
+Warning 27: unused variable b.
+File "codegen.ml", line 198, characters 20-21:
+Warning 27: unused variable t.
+File "codegen.ml", line 199, characters 22-23:
+Warning 27: unused variable t.
+File "codegen.ml", line 201, characters 21-22:
+Warning 27: unused variable t.
+File "codegen.ml", line 202, characters 23-24:
+Warning 27: unused variable t.
+File "codegen.ml", line 204, characters 16-17:
+Warning 27: unused variable t.
+File "codegen.ml", line 205, characters 30-31:
+Warning 27: unused variable t.
+File "codegen.ml", line 222, characters 23-24:
+Warning 27: unused variable t.
+File "codegen.ml", line 227, characters 26-27:
+Warning 27: unused variable t.
+File "codegen.ml", line 231, characters 31-32:
+Warning 27: unused variable t.
+File "codegen.ml", line 234, characters 25-26:
+Warning 27: unused variable t.
+# Target: scanner.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:scanner.cmo, file:scanner.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o scanner.cmo scanner.ml
+# Target: semant.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:semant.cmo, file:semant.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o semant.cmo semant.ml
++ ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o semant.cmo semant.ml
+File "semant.ml", line 60, characters 2-54:
+Warning 10: this expression should have type unit.
+File "semant.ml", line 64, characters 6-33:
+Warning 10: this expression should have type unit.
+File "semant.ml", line 67, characters 41-4069:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(Noexpr|GlobalAsn (_, _)|Struct_make _|Struct_access (_, _))
+File "semant.ml", line 205, characters 28-33:
+Warning 40: fname was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 205, characters 28-33:
+Warning 42: this use of fname required disambiguation.
+File "semant.ml", line 208, characters 69-76:
+Warning 40: formals was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 208, characters 69-76:
+Warning 42: this use of formals required disambiguation.
+File "semant.ml", line 212, characters 77-81:
+Warning 40: body was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 212, characters 77-81:
+Warning 42: this use of body required disambiguation.
+File "semant.ml", line 213, characters 37-40:
+Warning 40: typ was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 213, characters 37-40:
+Warning 42: this use of typ required disambiguation.
+File "semant.ml", line 213, characters 55-60:
+Warning 40: fname was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 213, characters 55-60:
+Warning 42: this use of fname required disambiguation.
+File "semant.ml", line 213, characters 77-84:
+Warning 40: formals was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 213, characters 77-84:
+Warning 42: this use of formals required disambiguation.
+File "semant.ml", line 216, characters 32-35:
+Warning 40: typ was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 216, characters 32-35:
+Warning 42: this use of typ required disambiguation.
+File "semant.ml", line 220, characters 29-34:
+Warning 40: sname was selected from type Ast.strc.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 220, characters 29-34:
+Warning 42: this use of sname required disambiguation.
+File "semant.ml", line 222, characters 42-47:
+Warning 40: funcs was selected from type Ast.strc.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 222, characters 42-47:
+Warning 42: this use of funcs required disambiguation.
+File "semant.ml", line 222, characters 37-47:
+Error: This expression has type Ast.func list
+       but an expression was expected of type Sast.func_t
+Command exited with code 2.
+# Compilation unsuccessful.

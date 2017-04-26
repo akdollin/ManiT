@@ -13,7 +13,7 @@ let global_env = { funcs = [] }
  *)
 (* this is the hash table used to store structs *)
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
-let struct_func_hash:(string, A.strc.func) Hashtbl.t = Hashtbl.create 10
+let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10
 
 
 (* Only call on struct or eventually array access *)
