@@ -13,9 +13,7 @@ let global_env = { funcs = [] }
  *)
 (* this is the hash table used to store structs *)
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
-(* let func_names:(string, A.func) Hashtbl.t = Hashtbl.create 10
- *)
-
+let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10
 
 
 (* Only call on struct or eventually array access *)
@@ -183,6 +181,8 @@ let check_return_types func_typ func_body =
   List.iter (fun each_ret_typ -> (if (each_ret_typ != func_typ) 
   then raise(Failure("return types in fbody do not match with fdecl"))); ) ret_typs
 
+(* let struct_func_check func list
+ *)
 (* check_stmt *)
 let rec check_stmt env = function
   Ast.Block(stmtlist) ->
@@ -219,10 +219,9 @@ let rec check_stmt env = function
   | Ast.Struc(strc) ->
     (match check_struct strc.sname with
       false ->
-        let struct_func = List.map (fun func -> Func(func)) strc.funcs in
-        let sast_strc = { sname = strc = strc.sname; attributes = strc.attributes; funcs = struct_func } in
-(*         struct_list.structs <- (sast_strc :: struct_list.structs);
- *)        Hashtbl.add structs_hash strc.sname sast_strc;
+        Hashtbl.add struct_func_hash strc.funcs.fname strc.funcs; 
+        let sast_strc = { sname = strc.sname; attributes = strc.attributes } in
+        Hashtbl.add structs_hash strc.sname sast_strc;
         Struc(sast_strc)
     | true -> raise(Failure("duplicate struct")); )
   (* conditionals *)
