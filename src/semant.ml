@@ -9,17 +9,13 @@ let built_in = [("print", A.String, A.Int)]
 
 let global_env = { funcs = [] }
 
-let struct_list = { structs = [] }
-
+(* let struct_list = { structs = [] }
+ *)
 (* this is the hash table used to store structs *)
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
 (* let func_names:(string, A.func) Hashtbl.t = Hashtbl.create 10
  *)
 
-(* Search hash table to see if the struct exists *)
-let check_struct s =
-  try Hashtbl.find structs_hash s
-  with | Not_found -> raise (Exceptions.InvalidStruct s)
 
 
 (* Only call on struct or eventually array access *)
@@ -67,6 +63,10 @@ let exist_func name = try
 
 let exist_struct name = try
   List.find (fun s -> s.sname = name) struct_list.structs; true with Not_found -> false
+
+(* Search hash table to see if the struct exists *)
+let check_struct s =
+  try Hashtbl.find structs_hash s; true with Not_found -> false
 
 (*check_expr: core type-matching function that recursively annotates type of each expr. *)
 let rec check_expr (env : environment) = function
@@ -220,12 +220,12 @@ let rec check_stmt env = function
         Func(sast_func)
     | true -> raise(Failure("cannot redeclare function with same name")); )
   | Ast.Struc(strc) ->
-    (match exist_struct strc strc.sname with
+    (match check_struct strc strc.sname with
       false ->
         let struct_func = List.map (fun stmt -> check_stmt env func) strc.funcs in
         let sast_strc = { sname = strc = strc.sname; attributes = strc.attributes; funcs = struct_func } in
-        struct_list.structs <- (sast_strc :: struct_list.structs);
-        Hashtbl.add structs_hash strc.sname sast_strc;
+(*         struct_list.structs <- (sast_strc :: struct_list.structs);
+ *)        Hashtbl.add structs_hash strc.sname sast_strc;
         Struc(sast_strc)
     | true -> raise(Failure("duplicate struct")); )
   (* conditionals *)
