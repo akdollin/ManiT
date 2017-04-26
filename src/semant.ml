@@ -8,9 +8,18 @@ module StringMap = Map.Make(String)
 let built_in = [("print", A.String, A.Int)]
 
 let global_env = { funcs = [] }
+let struct_list = { structs = [] }
 
 (* this is the hash table used to store structs *)
-let struct_types:(string, A.strc) Hashtbl.t = Hashtbl.create 10
+let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
+(* let func_names:(string, A.func) Hashtbl.t = Hashtbl.create 10
+ *)
+
+(* Search hash table to see if the struct exists *)
+let check_struct s =
+  try Hashtbl.find structs_hash s
+  with | Not_found -> raise (Exceptions.InvalidStruct s)
+
 
 (* Only call on struct or eventually array access *)
 let rec string_id_expr expr = 
@@ -20,6 +29,13 @@ let rec string_id_expr expr =
   | A.Call(s,_) -> s
   | _ -> raise (Exceptions.ErrCatch "string_id_expr")
 
+(* Helper function to check for dups in a list *)
+let dub_check exceptf list =
+    let rec search = function
+        n1 :: n2 :: _ when n1 = n2 -> raise (Failure (exceptf n1))
+      | _ :: t -> search t
+      | [] -> ()
+    in search (List.sort compare list)
 
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
@@ -47,6 +63,9 @@ let find_func name = try
 
 let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
+
+let exist_struct name = try
+  List.find (fun s -> s.sname = name) struct_list.structs; true with Not_found -> false
 
 (*check_expr: core type-matching function that recursively annotates type of each expr. *)
 let rec check_expr (env : environment) = function
@@ -130,7 +149,8 @@ let rec check_expr (env : environment) = function
           Unop(uop, (e, typ)), typ
       | _ -> raise(Failure("unop error"))
       )
-  
+  | Ast.Struct_make(s) -> (try let tmp_s = check_struct s) with
+    | Not_found -> raise (Exceptions.InvalidStruct s))
   (* Function Call *)
   | Ast.Call(name, actuals) ->
     (* check types to each actuals and get types of formals from fdecl. *)
@@ -197,7 +217,14 @@ let rec check_stmt env = function
         check_return_types func.typ sast_fbody;
         Func(sast_func)
     | true -> raise(Failure("cannot redeclare function with same name")); )
-
+  | Ast.Struc(strc) ->
+    (match exist_struct strc strc.sname with
+      false ->
+        ignore (List.map (fun s -> (dub_check(fun s -> "duplicate struct field " ^ s) (List.map (fun s -> snd s) s.A.attributes))) struct_list);
+        let checked_structs = Hashtbl.add structs_hash A.sname;
+        struct_list.structs <- sast_strc :: struct_list.structs);
+        Struc(sast_strc)
+      | true -> raise(Failure("duplicate stuct name found")); )
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
     let (e, typ) = check_expr env e in

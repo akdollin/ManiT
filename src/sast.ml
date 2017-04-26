@@ -12,6 +12,8 @@ type expr_det =
   | Unop of Ast.uop * expr_t
   | Call of string * expr_t list
   | Assign of string * expr_t
+  | Struct_create of string
+  | Struct_access of string * string * int * Ast.typ
   (* add array access here *)
   
   and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
@@ -31,6 +33,11 @@ type stmt_t =
     formals : (Ast.typ * string) list; 
     body : stmt_t list; (* need typed statements *)
    }
+  and strc_t = {
+    sname : Ast.string;
+    attributes : (Ast.typ * string) list;
+    funcs : func_t list;
+}
 
 type symbol_table = {
   parent : symbol_table option;

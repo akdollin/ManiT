@@ -6,7 +6,7 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Float | String | Void 
+type typ = Int | Bool | Float | String | Void | Struct_typ of string
 (* need to check if formals have Void typ *)
 type bind = typ * string
 
@@ -22,7 +22,7 @@ type expr =
   | Call of string * expr list (*fname and actuals*)
   | Noexpr (* ERROR? is Noexpr ok? *) 
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
-  | Struct_create of string
+  | Struct_make of string
   | Struct_access of expr * expr
 
 type stmt =
@@ -34,8 +34,7 @@ type stmt =
   | While of expr * stmt
   | Func of func
   | Struc of strc
-
-and 
+ 
 func = {
     typ : typ;
     fname : string;
@@ -45,7 +44,7 @@ func = {
 and
 strc = {
   sname : string;
-  attributes : expr list;
+  attributes : bind list;
   funcs : func list;
 }
 
