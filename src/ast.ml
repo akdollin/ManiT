@@ -41,13 +41,12 @@ func = {
     fname : string;
     formals : bind list;
     body : stmt list;
-(*     struc_method : bool;
- *)}
+}
 and
 strc = {
   sname : string;
   attributes : bind list;
-(*   methods : func list;
- *)}
+  funcs : func list;
+}
 
 type program = stmt list

@@ -64,9 +64,20 @@ expr_opt:
     /* nothing */ { Noexpr }
   | expr          { $1 }
 
+vdecl_list:
+  { [] }
+  | vdecl_list vdecl { $2::$1 }
+
+vdecl:
+  ID SEMI { Id($1) }
+
 struct_dec: 
-  ID LBRACE expr_list RBRACE SEMI {{
-    sname = $1; attributes = List.rev $3; }} 
+  ID LBRACE vdecl_list func_list RBRACE SEMI {{
+    sname = $1; attributes = List.rev $3; funcs = List.rev $4 }} 
+
+func_list:
+  { [] }
+  | func_list func { $2::$1 }
 
 func:
    typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
@@ -89,13 +100,6 @@ formals_opt:
 formal_list:
     typ ID { [($1, $2)] }
   | formal_list COMMA typ ID { ($3, $4)  :: $1 }
-
-expr_list:
-  { [] }
-  | expr_list  proper_expr { $2::$1 }
-
-proper_expr:
-    expr SEMI { Expr $1 }
 
 expr:
     INTLIT          { IntLit($1) }
