@@ -10,7 +10,7 @@ let built_in = [("print", A.String, A.Int)]
 let global_env = { funcs = [] }
 
 (* this is the hash table used to store structs *)
-let struct_types:(string, A.struc) Hashtbl.t = Hashtbl.create 10
+let struct_types:(string, A.strc) Hashtbl.t = Hashtbl.create 10
 
 (* Only call on struct or eventually array access *)
 let rec string_id_expr expr = 
@@ -222,7 +222,6 @@ let init_env =
   let init_scope  = {
     parent = None;
     variables = [];
-    in_struct_method = false;
   }
   in { scope = init_scope; }
 

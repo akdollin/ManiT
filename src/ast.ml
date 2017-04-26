@@ -45,7 +45,7 @@ func = {
 and
 strc = {
   sname : string;
-  attributes : bind list;
+  attributes : expr list;
   funcs : func list;
 }
 
