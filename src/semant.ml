@@ -149,9 +149,9 @@ let rec check_expr (env : environment) = function
           Unop(uop, (e, typ)), typ
       | _ -> raise(Failure("unop error"))
       )
-  | Ast.Struct_make(s) -> 
+(*   | Ast.Struct_make(s) -> 
     let tmp_s = try check_struct s with Not_found -> 
-    raise (Exceptions.InvalidStruct s);
+    raise (Exceptions.InvalidStruct s); *)
   (* Function Call *)
   | Ast.Call(name, actuals) ->
     (* check types to each actuals and get types of formals from fdecl. *)
