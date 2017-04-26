@@ -61,9 +61,6 @@ let find_func name = try
 let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
 
-let exist_struct name = try
-  List.find (fun s -> s.sname = name) struct_list.structs; true with Not_found -> false
-
 (* Search hash table to see if the struct exists *)
 let check_struct s =
   try Hashtbl.find structs_hash s; true with Not_found -> false
