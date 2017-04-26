@@ -223,7 +223,7 @@ let rec check_stmt env = function
       false ->
         ignore (List.map (fun s -> (dub_check(fun s -> "duplicate struct field " ^ s) (List.map (fun s -> snd s) s.A.attributes))) struct_list);
         let checked_structs = Hashtbl.add structs_hash A.sname;
-        struct_list.structs <- sast_strc :: struct_list.structs);
+        struct_list.structs <- (sast_strc :: struct_list.structs);
         Struc(sast_strc)
       | true -> raise(Failure("duplicate stuct name found")); )
   (* conditionals *)
