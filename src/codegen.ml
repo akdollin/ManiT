@@ -31,13 +31,27 @@ let translate (stmts) =
   let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func = L.declare_function "printf" printf_t the_module in
 
-  let ltype_of_typ = function
+  let ltype_of_typ m = function
       A.Int -> i32_t
     | A.Float -> f32_t
     | A.String -> i8_t (* ptr? *)
     | A.Bool -> i1_t
-    | A.Void -> void_t  (* need void? see return types *)  
+    | A.Void -> void_t  (* need void? see return types *)
+    | A.Struct_typ(s) -> StringMap.find s m
     | _ -> i32_t (* placed due to error. add string *) in
+
+  (* Defining each of the structs *)
+  let struct_ltypes =
+      let struct_ltype m st = 
+          (* Ocaml Array containing llvm lltypes of the member variables *)
+          let decls_array = Array.of_list( List.rev ( List.fold_left
+                (fun l (t,_) -> (ltype_of_typ m t)::l) [] st.A.vdecls) )
+          (* Define the llvm struct type *)
+      in let named_struct = L.named_struct_type context st.A.sname
+      in L.struct_set_body named_struct decls_array false ; (* false -> not packed *)
+      StringMap.add st.A.sname named_struct m in
+      List.fold_left struct_ltype StringMap.empty structs
+  in
 
   (* init value for each type
   let init_val = function
@@ -53,7 +67,7 @@ let translate (stmts) =
     match t with 
       A.Int | A.Bool -> L.const_int ltype 0
     | A.Float -> L.const_float ltype 0.0
-    | A.String -> L.const_pointer_null i8_t
+    | A.String -> L.const_string context ""
     | _ -> L.const_int ltype 777 (* for errors *) in 
 
   (* alloc globals *)

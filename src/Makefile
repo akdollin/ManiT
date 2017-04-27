@@ -64,6 +64,13 @@ semant.cmo : ast.cmo
 semant.cmx : ast.cmx
 parser.cmi : ast.cmo
 
+TESTS = *
+
+FAILS = *
+
+TESTFILES = $(TEST:%=test-%.out) $(TESTS:%=test-%.mt)\
+			$(FAILS:%fail-%.mt) $(FAILS:%=fail-%.err)
+
 # Building the tarball
 
 # TESTS = add1 arith1 arith2 arith3 fib for1 for2 func1 func2 func3	\

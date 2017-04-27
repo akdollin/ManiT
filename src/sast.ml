@@ -25,12 +25,18 @@ type stmt_t =
   | While of expr_t * stmt_t
   | Func of func_t 
 
-  and func_t = {
+and func_t = {
     typ : Ast.typ; 
     fname : string;
     formals : (Ast.typ * string) list; 
     body : stmt_t list; (* need typed statements *)
-   }
+}
+
+and strc_t = {
+    sname : string;
+    vdecls : vdecl_t list;
+    funcs : func_t list;
+}
 
 type symbol_table = {
   parent : symbol_table option;

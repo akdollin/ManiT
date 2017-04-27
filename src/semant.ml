@@ -31,7 +31,7 @@ let find_built_in name = try
   List.find (fun (id, typ, ret) -> id = name) built_in with Not_found -> raise Not_found
 
 let find_func name = try
-  List.find (fun f -> f.fname = name) global_env.funcs with Not_found -> raise Not_found  
+  List.find (fun f -> f.fname = name) global_env.funcs with Not_found -> raise Not_found
 
 let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
@@ -120,9 +120,14 @@ let rec check_expr (env : environment) = function
       )
   
   (* Function Call *)
-  | Ast.Call(name, actuals) ->
-    (* check types to each actuals and get types of formals from fdecl. *)
+  | Ast.Call(name, actuals) -> 
     let typed_actuals = List.map (fun e -> (check_expr env e)) actuals in
+
+    match name with
+    "print" -> 
+    Call(name, typed_actuals), A.Void
+    | _ ->
+    (* check types to each actuals and get types of formals from fdecl. *)
     let func = try find_func name with Not_found -> 
       raise(Failure("undefined function was called.")) in
 

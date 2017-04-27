@@ -22,6 +22,8 @@ type expr =
   | Noexpr (* ERROR? is Noexpr ok? *) 
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
 
+type bind = typ * string
+
 type stmt =
     Block of stmt list
   | Expr of expr
@@ -39,4 +41,10 @@ func = {
     body : stmt list;
   }
 
-type program = stmt list
+and
+strc = {
+    sname : string;
+    decls : bind list;
+}
+
+type program = stmt list * strc list

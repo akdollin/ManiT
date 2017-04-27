@@ -7,10 +7,11 @@
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
 %token LBRACK RBRACK
+%token STRUCT
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE
-%token DEF GLOBAL STRUCT
+%token DEF GLOBAL
 
 %token INT FLOAT BOOL STRING VOID
 /* token VOID */
@@ -38,8 +39,7 @@
 
 %%
 
-program:
-  stmts EOF { List.rev $1 }
+program: stmts structs EOF { (List.rev $1, List.rev $2) }
 
 stmts:
     /* nothing */  { [] }
@@ -58,6 +58,18 @@ stmt:
   | DEF func { Func($2) }
   /* add struct here. */
 
+vdecl_list:
+  | vdecl_list vdecl { $2::$1 }
+
+vdecl: typ ID SEMI { ($1,$2) }
+
+struct_decls:
+  | structs sdecl {$2::$1}
+
+sdecl:
+  STRUCT ID LBRACE vdecl_list RBRACE SEMI {{
+      sname = $2; decls = List.rev $4
+  }}
 
 expr_opt: 
     /* nothing */ { Noexpr }
