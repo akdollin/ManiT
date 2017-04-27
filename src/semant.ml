@@ -66,9 +66,58 @@ let check_struct s =
 let check_env env = 
   if env.parent == None then true else false
 
+let rec check_struct_func env func_list = function 
+  Ast.Func(func) ->   
+  (* add fdecl to global env if it hasn't declared previously. *)
+    ( match exist_func func.fname with 
+      false ->
+        (* make new scope and env with formals *)
+        let flipped_formals = List.map (fun (t, id) -> (id, t)) func.formals in
+        let new_scope = { parent = Some(env.scope); variables = flipped_formals } in
+        let new_env = { scope = new_scope } in
+        (* iterate thru stmtlist like a block *)
+        let sast_fbody = List.map (fun stmt -> check_stmt new_env stmt) func.body in
+        let sast_func = { typ = func.typ; fname = func.fname; formals = func.formals; body = sast_fbody } in
+        global_env.funcs <- (sast_func :: global_env.funcs);
+        (* check return typs within fbody and ftype. calls check_expr again on return stmts. *)
+        check_return_types func.typ sast_fbody;
+        Func(sast_func)
+    | true -> raise(Failure("cannot redeclare function with same name")); )
+  | _ -> raise(Failure("unchecked struct function"))
+
+
+let rec check_vdecl (env : environment) vdecl_list = function
+    (* Variable decl int a;string id; *)
+  | Ast.Id(name) -> let (name, typ) = try find_var env.scope name with 
+      Not_found -> raise (Failure("undeclared identifier " ^ name)) in 
+      typ, Id(name)    (* use type, ID instead of id,type *)
+  (*variable assign uses the original assign checker int a = 5*)
+  | Ast.Assign(name, expr) ->
+    let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
+    let sast_assign = (* (n, (e, e's typ)), n's typ *) 
+    try let (name, left_typ) = find_var env.scope name in
+      if left_typ != right_typ (* type mismatch. depends on rule. *)
+      then raise (Failure (" type mismatch "))
+      else Assign(name, (expr, right_typ)), right_typ
+    with Not_found -> (* new name. declaration. *)
+      let decl = (name, right_typ) in 
+      env.scope.variables <- (decl :: env.scope.variables);
+      Assign(name, (expr, right_typ)), right_typ
+    in sast_assign
+
 let check_structs_all env strc = 
-  _ -> ""
- 
+  (*   check the vdecl list and return sast vdecls*)  
+  let struct_vdecl = List.map (fun vdecl -> check_vdecl env vdecl) strc.vdecls  in 
+  (* create new env with checked vdecls *)
+  let new_scope = { parent = env; variables = struct_vdecl } in 
+  let new_env = { scope = new_scope } in 
+  (* check all the functions in the struct *)
+  let struct_funcs = List.map (fun func -> check_struct_func new_env func) strc.funcs in
+  let sast_struct = { sname = strc.sname; vdecl = struct_vdecl; funcs = struct_funcs } in
+  (*   add the finished sstruct to the hash*)  
+  Hashtbl.add structs_hash strc.sname sast_struct;
+  (*return sast struct type*)  
+  Struc(sast_strc)
 
 (*check_expr: core type-matching function that recursively annotates type of each expr. *)
 let rec check_expr (env : environment) = function
@@ -205,10 +254,8 @@ let rec check_stmt env = function
   
   (* Func.
   checks env. checks if all return types match with fdecl. adds fdecl to env. *)
-  | Ast.Func(func) ->
-(*   ALLOWS FOR NESTED FUNCTIONs
- *)    
-(* add fdecl to global env if it hasn't declared previously. *)
+  | Ast.Func(func) ->   
+  (* add fdecl to global env if it hasn't declared previously. *)
     ( match exist_func func.fname with 
       false ->
         (* make new scope and env with formals *)
@@ -228,15 +275,8 @@ let rec check_stmt env = function
       true ->
         (match check_struct strc.sname with
           false ->
-            check_structs_all strc env; 
-    (*         let new_scope = { parent = Some(env.scope); variables = [] } in
-            let new_env = { scope = new_scope } in
-
-            let struct_vdecl = List.map (fun stmt -> check_stmt new_env stmt) strc.attributes in
-            let struct_func = List.map (fun stmt -> check_stmt new_env stmt) strc.funcs in
-            let sast_strc = { sname = strc.sname; attributes = struct_vdecl; funcs = struct_func } in
-            Hashtbl.add structs_hash strc.sname sast_strc;
-            Struc(sast_strc) *)
+            let sast_strc = check_structs_all strc env in 
+            Struc(sast_strc) 
         | true -> raise(Failure("duplicate struct")); )
       | false -> raise(Failure("Structs must be global"));)
 

@@ -18,6 +18,10 @@ type expr_det =
   
   and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
 
+type vdecl_t = 
+  Id of (typ * string)
+  | Assign of string * expr_t
+
 type stmt_t =
     Block of stmt_t list
   | Expr of expr_t
@@ -28,8 +32,8 @@ type stmt_t =
   | Func of func_t 
   | Struc of strc_t
 
-
-  and func_t = {
+  and 
+  func_t = {
     typ : Ast.typ; 
     fname : string;
     formals : (Ast.typ * string) list; 
@@ -37,7 +41,7 @@ type stmt_t =
    }
   and strc_t = {
     sname : string;
-    attributes : (Ast.typ * string) list;
+    vdecls : vdecl_t list;
     funcs : func_t list;
 }
 

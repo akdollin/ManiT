@@ -69,6 +69,8 @@ vdecl_list:
 
 vdecl:
   ID SEMI { Id($1) }
+  | ID ASSIGN expr   { Assign($1, $3) }
+
 
 struct_dec: 
   ID LBRACE vdecl_list func_list RBRACE SEMI {{

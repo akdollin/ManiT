@@ -11,9 +11,6 @@ type typ = Int | Bool | Float | String | Void | Struct_typ of string
 (* type bind = typ * string
  *)
 
-type vdecl = 
-  Id of (typ * string)
-
 type expr =
     IntLit of int
   | FloatLit of float 
@@ -28,6 +25,10 @@ type expr =
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
   | Struct_make of string
   | Struct_access of expr * expr
+
+type vdecl = 
+  Id of (typ * string)
+  | Assign of string * expr
 
 type stmt =
     Block of stmt list
