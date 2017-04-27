@@ -32,56 +32,50 @@
 
   24  vdecl : any_typ_not_void ID SEMI
 
-  25  func_list :
-  26            | func_list func
+  25  func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
 
-  27  func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
+  26  struct_decl : ID LBRACE vdecl_list RBRACE SEMI
 
-  28  struc_func_decls :
-  29                   | struc_func_decls func
+  27  formals_opt :
+  28              | formal_list
 
-  30  struct_decl : ID LBRACE vdecl_list RBRACE SEMI
+  29  formal_list : any_typ_not_void ID
+  30              | formal_list COMMA any_typ ID
 
-  31  formals_opt :
-  32              | formal_list
+  31  expr : INTLIT
+  32       | FLOATLIT
+  33       | STRINGLIT
+  34       | TRUE
+  35       | FALSE
+  36       | ID
+  37       | expr PLUS expr
+  38       | expr MINUS expr
+  39       | expr TIMES expr
+  40       | expr DIVIDE expr
+  41       | expr EQ expr
+  42       | expr NEQ expr
+  43       | expr LT expr
+  44       | expr LEQ expr
+  45       | expr GT expr
+  46       | expr GEQ expr
+  47       | expr AND expr
+  48       | expr OR expr
+  49       | expr DOT expr
+  50       | STRUCT ID
+  51       | MINUS expr
+  52       | NOT expr
+  53       | ID ASSIGN expr
+  54       | ID LPAREN actuals_opt RPAREN
+  55       | LPAREN expr RPAREN
+  56       | GLOBAL ID ASSIGN expr
 
-  33  formal_list : any_typ_not_void ID
-  34              | formal_list COMMA any_typ ID
+  57  actuals_opt :
+  58              | actuals_list
 
-  35  expr : INTLIT
-  36       | FLOATLIT
-  37       | STRINGLIT
-  38       | TRUE
-  39       | FALSE
-  40       | ID
-  41       | expr PLUS expr
-  42       | expr MINUS expr
-  43       | expr TIMES expr
-  44       | expr DIVIDE expr
-  45       | expr EQ expr
-  46       | expr NEQ expr
-  47       | expr LT expr
-  48       | expr LEQ expr
-  49       | expr GT expr
-  50       | expr GEQ expr
-  51       | expr AND expr
-  52       | expr OR expr
-  53       | expr DOT expr
-  54       | STRUCT ID
-  55       | MINUS expr
-  56       | NOT expr
-  57       | ID ASSIGN expr
-  58       | ID LPAREN actuals_opt RPAREN
-  59       | LPAREN expr RPAREN
-  60       | GLOBAL ID ASSIGN expr
+  59  actuals_list : expr
+  60               | actuals_list COMMA expr
 
-  61  actuals_opt :
-  62              | actuals_list
-
-  63  actuals_list : expr
-  64               | actuals_list COMMA expr
-
-  65  %entry% : '\001' program
+  61  %entry% : '\001' program
 
 state 0
 	$accept : . %entry% $end  (0)
@@ -93,7 +87,7 @@ state 0
 
 
 state 1
-	%entry% : '\001' . program  (65)
+	%entry% : '\001' . program  (61)
 	stmts : .  (2)
 
 	.  reduce 2
@@ -109,9 +103,9 @@ state 2
 
 
 state 3
-	%entry% : '\001' program .  (65)
+	%entry% : '\001' program .  (61)
 
-	.  reduce 65
+	.  reduce 61
 
 
 state 4
@@ -143,7 +137,7 @@ state 4
 
 
 state 5
-	expr : LPAREN . expr RPAREN  (59)
+	expr : LPAREN . expr RPAREN  (55)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -171,7 +165,7 @@ state 6
 
 
 state 7
-	expr : MINUS . expr  (55)
+	expr : MINUS . expr  (51)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -190,7 +184,7 @@ state 7
 
 
 state 8
-	expr : NOT . expr  (56)
+	expr : NOT . expr  (52)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -209,15 +203,15 @@ state 8
 
 
 state 9
-	expr : TRUE .  (38)
+	expr : TRUE .  (34)
 
-	.  reduce 38
+	.  reduce 34
 
 
 state 10
-	expr : FALSE .  (39)
+	expr : FALSE .  (35)
 
-	.  reduce 39
+	.  reduce 35
 
 
 state 11
@@ -279,7 +273,7 @@ state 15
 
 
 state 16
-	expr : GLOBAL . ID ASSIGN expr  (60)
+	expr : GLOBAL . ID ASSIGN expr  (56)
 
 	ID  shift 43
 	.  error
@@ -287,7 +281,7 @@ state 16
 
 state 17
 	stmt : STRUCT . struct_decl  (13)
-	expr : STRUCT . ID  (54)
+	expr : STRUCT . ID  (50)
 
 	ID  shift 44
 	.  error
@@ -296,46 +290,46 @@ state 17
 
 
 state 18
-	expr : INTLIT .  (35)
+	expr : INTLIT .  (31)
 
-	.  reduce 35
+	.  reduce 31
 
 
 state 19
-	expr : FLOATLIT .  (36)
+	expr : FLOATLIT .  (32)
 
-	.  reduce 36
+	.  reduce 32
 
 
 state 20
-	expr : STRINGLIT .  (37)
+	expr : STRINGLIT .  (33)
 
-	.  reduce 37
+	.  reduce 33
 
 
 state 21
-	expr : ID .  (40)
-	expr : ID . ASSIGN expr  (57)
-	expr : ID . LPAREN actuals_opt RPAREN  (58)
+	expr : ID .  (36)
+	expr : ID . ASSIGN expr  (53)
+	expr : ID . LPAREN actuals_opt RPAREN  (54)
 
 	LPAREN  shift 46
 	ASSIGN  shift 47
-	SEMI  reduce 40
-	RPAREN  reduce 40
-	COMMA  reduce 40
-	PLUS  reduce 40
-	MINUS  reduce 40
-	TIMES  reduce 40
-	DIVIDE  reduce 40
-	EQ  reduce 40
-	NEQ  reduce 40
-	LT  reduce 40
-	LEQ  reduce 40
-	GT  reduce 40
-	GEQ  reduce 40
-	AND  reduce 40
-	OR  reduce 40
-	DOT  reduce 40
+	SEMI  reduce 36
+	RPAREN  reduce 36
+	COMMA  reduce 36
+	PLUS  reduce 36
+	MINUS  reduce 36
+	TIMES  reduce 36
+	DIVIDE  reduce 36
+	EQ  reduce 36
+	NEQ  reduce 36
+	LT  reduce 36
+	LEQ  reduce 36
+	GT  reduce 36
+	GEQ  reduce 36
+	AND  reduce 36
+	OR  reduce 36
+	DOT  reduce 36
 
 
 state 22
@@ -352,19 +346,19 @@ state 23
 
 state 24
 	stmt : expr . SEMI  (4)
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	SEMI  shift 48
 	PLUS  shift 49
@@ -384,27 +378,27 @@ state 24
 
 
 state 25
-	expr : STRUCT . ID  (54)
+	expr : STRUCT . ID  (50)
 
 	ID  shift 62
 	.  error
 
 
 state 26
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	expr : LPAREN expr . RPAREN  (59)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	expr : LPAREN expr . RPAREN  (55)
 
 	RPAREN  shift 63
 	PLUS  shift 49
@@ -452,71 +446,71 @@ state 27
 
 
 state 28
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	expr : MINUS expr .  (55)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	expr : MINUS expr .  (51)
 
 	DOT  shift 61
-	SEMI  reduce 55
-	RPAREN  reduce 55
-	COMMA  reduce 55
-	PLUS  reduce 55
-	MINUS  reduce 55
-	TIMES  reduce 55
-	DIVIDE  reduce 55
-	EQ  reduce 55
-	NEQ  reduce 55
-	LT  reduce 55
-	LEQ  reduce 55
-	GT  reduce 55
-	GEQ  reduce 55
-	AND  reduce 55
-	OR  reduce 55
+	SEMI  reduce 51
+	RPAREN  reduce 51
+	COMMA  reduce 51
+	PLUS  reduce 51
+	MINUS  reduce 51
+	TIMES  reduce 51
+	DIVIDE  reduce 51
+	EQ  reduce 51
+	NEQ  reduce 51
+	LT  reduce 51
+	LEQ  reduce 51
+	GT  reduce 51
+	GEQ  reduce 51
+	AND  reduce 51
+	OR  reduce 51
 
 
 state 29
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	expr : NOT expr .  (56)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	expr : NOT expr .  (52)
 
 	DOT  shift 61
-	SEMI  reduce 56
-	RPAREN  reduce 56
-	COMMA  reduce 56
-	PLUS  reduce 56
-	MINUS  reduce 56
-	TIMES  reduce 56
-	DIVIDE  reduce 56
-	EQ  reduce 56
-	NEQ  reduce 56
-	LT  reduce 56
-	LEQ  reduce 56
-	GT  reduce 56
-	GEQ  reduce 56
-	AND  reduce 56
-	OR  reduce 56
+	SEMI  reduce 52
+	RPAREN  reduce 52
+	COMMA  reduce 52
+	PLUS  reduce 52
+	MINUS  reduce 52
+	TIMES  reduce 52
+	DIVIDE  reduce 52
+	EQ  reduce 52
+	NEQ  reduce 52
+	LT  reduce 52
+	LEQ  reduce 52
+	GT  reduce 52
+	GEQ  reduce 52
+	AND  reduce 52
+	OR  reduce 52
 
 
 state 30
@@ -527,19 +521,19 @@ state 30
 
 state 31
 	stmt : RETURN expr . SEMI  (6)
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	SEMI  shift 65
 	PLUS  shift 49
@@ -661,38 +655,38 @@ state 41
 
 
 state 42
-	func : any_typ . ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE  (27)
+	func : any_typ . ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE  (25)
 
 	ID  shift 70
 	.  error
 
 
 state 43
-	expr : GLOBAL ID . ASSIGN expr  (60)
+	expr : GLOBAL ID . ASSIGN expr  (56)
 
 	ASSIGN  shift 71
 	.  error
 
 
 state 44
-	struct_decl : ID . LBRACE vdecl_list RBRACE SEMI  (30)
-	expr : STRUCT ID .  (54)
+	struct_decl : ID . LBRACE vdecl_list RBRACE SEMI  (26)
+	expr : STRUCT ID .  (50)
 
 	LBRACE  shift 72
-	SEMI  reduce 54
-	PLUS  reduce 54
-	MINUS  reduce 54
-	TIMES  reduce 54
-	DIVIDE  reduce 54
-	EQ  reduce 54
-	NEQ  reduce 54
-	LT  reduce 54
-	LEQ  reduce 54
-	GT  reduce 54
-	GEQ  reduce 54
-	AND  reduce 54
-	OR  reduce 54
-	DOT  reduce 54
+	SEMI  reduce 50
+	PLUS  reduce 50
+	MINUS  reduce 50
+	TIMES  reduce 50
+	DIVIDE  reduce 50
+	EQ  reduce 50
+	NEQ  reduce 50
+	LT  reduce 50
+	LEQ  reduce 50
+	GT  reduce 50
+	GEQ  reduce 50
+	AND  reduce 50
+	OR  reduce 50
+	DOT  reduce 50
 
 
 state 45
@@ -702,8 +696,8 @@ state 45
 
 
 state 46
-	expr : ID LPAREN . actuals_opt RPAREN  (58)
-	actuals_opt : .  (61)
+	expr : ID LPAREN . actuals_opt RPAREN  (54)
+	actuals_opt : .  (57)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -716,7 +710,7 @@ state 46
 	FLOATLIT  shift 19
 	STRINGLIT  shift 20
 	ID  shift 21
-	RPAREN  reduce 61
+	RPAREN  reduce 57
 
 	expr  goto 73
 	actuals_opt  goto 74
@@ -724,7 +718,7 @@ state 46
 
 
 state 47
-	expr : ID ASSIGN . expr  (57)
+	expr : ID ASSIGN . expr  (53)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -749,7 +743,7 @@ state 48
 
 
 state 49
-	expr : expr PLUS . expr  (41)
+	expr : expr PLUS . expr  (37)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -768,7 +762,7 @@ state 49
 
 
 state 50
-	expr : expr MINUS . expr  (42)
+	expr : expr MINUS . expr  (38)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -787,7 +781,7 @@ state 50
 
 
 state 51
-	expr : expr TIMES . expr  (43)
+	expr : expr TIMES . expr  (39)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -806,7 +800,7 @@ state 51
 
 
 state 52
-	expr : expr DIVIDE . expr  (44)
+	expr : expr DIVIDE . expr  (40)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -825,7 +819,7 @@ state 52
 
 
 state 53
-	expr : expr EQ . expr  (45)
+	expr : expr EQ . expr  (41)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -844,7 +838,7 @@ state 53
 
 
 state 54
-	expr : expr NEQ . expr  (46)
+	expr : expr NEQ . expr  (42)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -863,7 +857,7 @@ state 54
 
 
 state 55
-	expr : expr LT . expr  (47)
+	expr : expr LT . expr  (43)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -882,7 +876,7 @@ state 55
 
 
 state 56
-	expr : expr LEQ . expr  (48)
+	expr : expr LEQ . expr  (44)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -901,7 +895,7 @@ state 56
 
 
 state 57
-	expr : expr GT . expr  (49)
+	expr : expr GT . expr  (45)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -920,7 +914,7 @@ state 57
 
 
 state 58
-	expr : expr GEQ . expr  (50)
+	expr : expr GEQ . expr  (46)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -939,7 +933,7 @@ state 58
 
 
 state 59
-	expr : expr AND . expr  (51)
+	expr : expr AND . expr  (47)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -958,7 +952,7 @@ state 59
 
 
 state 60
-	expr : expr OR . expr  (52)
+	expr : expr OR . expr  (48)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -977,7 +971,7 @@ state 60
 
 
 state 61
-	expr : expr DOT . expr  (53)
+	expr : expr DOT . expr  (49)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -996,15 +990,15 @@ state 61
 
 
 state 62
-	expr : STRUCT ID .  (54)
+	expr : STRUCT ID .  (50)
 
-	.  reduce 54
+	.  reduce 50
 
 
 state 63
-	expr : LPAREN expr RPAREN .  (59)
+	expr : LPAREN expr RPAREN .  (55)
 
-	.  reduce 59
+	.  reduce 55
 
 
 state 64
@@ -1022,19 +1016,19 @@ state 65
 state 66
 	stmt : IF LPAREN expr . RPAREN stmt  (8)
 	stmt : IF LPAREN expr . RPAREN stmt ELSE stmt  (9)
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	RPAREN  shift 90
 	PLUS  shift 49
@@ -1055,19 +1049,19 @@ state 66
 
 state 67
 	expr_opt : expr .  (15)
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	PLUS  shift 49
 	MINUS  shift 50
@@ -1095,19 +1089,19 @@ state 68
 
 state 69
 	stmt : WHILE LPAREN expr . RPAREN stmt  (11)
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	RPAREN  shift 92
 	PLUS  shift 49
@@ -1127,14 +1121,14 @@ state 69
 
 
 state 70
-	func : any_typ ID . LPAREN formals_opt RPAREN LBRACE stmts RBRACE  (27)
+	func : any_typ ID . LPAREN formals_opt RPAREN LBRACE stmts RBRACE  (25)
 
 	LPAREN  shift 93
 	.  error
 
 
 state 71
-	expr : GLOBAL ID ASSIGN . expr  (60)
+	expr : GLOBAL ID ASSIGN . expr  (56)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -1153,7 +1147,7 @@ state 71
 
 
 state 72
-	struct_decl : ID LBRACE . vdecl_list RBRACE SEMI  (30)
+	struct_decl : ID LBRACE . vdecl_list RBRACE SEMI  (26)
 	vdecl_list : .  (22)
 
 	.  reduce 22
@@ -1162,20 +1156,20 @@ state 72
 
 
 state 73
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	actuals_list : expr .  (63)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	actuals_list : expr .  (59)
 
 	PLUS  shift 49
 	MINUS  shift 50
@@ -1190,40 +1184,40 @@ state 73
 	AND  shift 59
 	OR  shift 60
 	DOT  shift 61
-	RPAREN  reduce 63
-	COMMA  reduce 63
+	RPAREN  reduce 59
+	COMMA  reduce 59
 
 
 state 74
-	expr : ID LPAREN actuals_opt . RPAREN  (58)
+	expr : ID LPAREN actuals_opt . RPAREN  (54)
 
 	RPAREN  shift 96
 	.  error
 
 
 state 75
-	actuals_opt : actuals_list .  (62)
-	actuals_list : actuals_list . COMMA expr  (64)
+	actuals_opt : actuals_list .  (58)
+	actuals_list : actuals_list . COMMA expr  (60)
 
 	COMMA  shift 97
-	RPAREN  reduce 62
+	RPAREN  reduce 58
 
 
 state 76
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	expr : ID ASSIGN expr .  (57)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	expr : ID ASSIGN expr .  (53)
 
 	PLUS  shift 49
 	MINUS  shift 50
@@ -1238,103 +1232,239 @@ state 76
 	AND  shift 59
 	OR  shift 60
 	DOT  shift 61
-	SEMI  reduce 57
-	RPAREN  reduce 57
-	COMMA  reduce 57
+	SEMI  reduce 53
+	RPAREN  reduce 53
+	COMMA  reduce 53
 
 
 state 77
-	expr : expr . PLUS expr  (41)
-	expr : expr PLUS expr .  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr PLUS expr .  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	TIMES  shift 51
 	DIVIDE  shift 52
+	DOT  shift 61
+	SEMI  reduce 37
+	RPAREN  reduce 37
+	COMMA  reduce 37
+	PLUS  reduce 37
+	MINUS  reduce 37
+	EQ  reduce 37
+	NEQ  reduce 37
+	LT  reduce 37
+	LEQ  reduce 37
+	GT  reduce 37
+	GEQ  reduce 37
+	AND  reduce 37
+	OR  reduce 37
+
+
+state 78
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr MINUS expr .  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+
+	TIMES  shift 51
+	DIVIDE  shift 52
+	DOT  shift 61
+	SEMI  reduce 38
+	RPAREN  reduce 38
+	COMMA  reduce 38
+	PLUS  reduce 38
+	MINUS  reduce 38
+	EQ  reduce 38
+	NEQ  reduce 38
+	LT  reduce 38
+	LEQ  reduce 38
+	GT  reduce 38
+	GEQ  reduce 38
+	AND  reduce 38
+	OR  reduce 38
+
+
+state 79
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr TIMES expr .  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+
+	DOT  shift 61
+	SEMI  reduce 39
+	RPAREN  reduce 39
+	COMMA  reduce 39
+	PLUS  reduce 39
+	MINUS  reduce 39
+	TIMES  reduce 39
+	DIVIDE  reduce 39
+	EQ  reduce 39
+	NEQ  reduce 39
+	LT  reduce 39
+	LEQ  reduce 39
+	GT  reduce 39
+	GEQ  reduce 39
+	AND  reduce 39
+	OR  reduce 39
+
+
+state 80
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr DIVIDE expr .  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+
+	DOT  shift 61
+	SEMI  reduce 40
+	RPAREN  reduce 40
+	COMMA  reduce 40
+	PLUS  reduce 40
+	MINUS  reduce 40
+	TIMES  reduce 40
+	DIVIDE  reduce 40
+	EQ  reduce 40
+	NEQ  reduce 40
+	LT  reduce 40
+	LEQ  reduce 40
+	GT  reduce 40
+	GEQ  reduce 40
+	AND  reduce 40
+	OR  reduce 40
+
+
+state 81
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr EQ expr .  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+
+	PLUS  shift 49
+	MINUS  shift 50
+	TIMES  shift 51
+	DIVIDE  shift 52
+	LT  shift 55
+	LEQ  shift 56
+	GT  shift 57
+	GEQ  shift 58
 	DOT  shift 61
 	SEMI  reduce 41
 	RPAREN  reduce 41
 	COMMA  reduce 41
-	PLUS  reduce 41
-	MINUS  reduce 41
 	EQ  reduce 41
 	NEQ  reduce 41
-	LT  reduce 41
-	LEQ  reduce 41
-	GT  reduce 41
-	GEQ  reduce 41
 	AND  reduce 41
 	OR  reduce 41
 
 
-state 78
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr MINUS expr .  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+state 82
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr NEQ expr .  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
+	PLUS  shift 49
+	MINUS  shift 50
 	TIMES  shift 51
 	DIVIDE  shift 52
+	LT  shift 55
+	LEQ  shift 56
+	GT  shift 57
+	GEQ  shift 58
 	DOT  shift 61
 	SEMI  reduce 42
 	RPAREN  reduce 42
 	COMMA  reduce 42
-	PLUS  reduce 42
-	MINUS  reduce 42
 	EQ  reduce 42
 	NEQ  reduce 42
-	LT  reduce 42
-	LEQ  reduce 42
-	GT  reduce 42
-	GEQ  reduce 42
 	AND  reduce 42
 	OR  reduce 42
 
 
-state 79
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr TIMES expr .  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+state 83
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr LT expr .  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
+	PLUS  shift 49
+	MINUS  shift 50
+	TIMES  shift 51
+	DIVIDE  shift 52
 	DOT  shift 61
 	SEMI  reduce 43
 	RPAREN  reduce 43
 	COMMA  reduce 43
-	PLUS  reduce 43
-	MINUS  reduce 43
-	TIMES  reduce 43
-	DIVIDE  reduce 43
 	EQ  reduce 43
 	NEQ  reduce 43
 	LT  reduce 43
@@ -1345,30 +1475,30 @@ state 79
 	OR  reduce 43
 
 
-state 80
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr DIVIDE expr .  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+state 84
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr LEQ expr .  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
+	PLUS  shift 49
+	MINUS  shift 50
+	TIMES  shift 51
+	DIVIDE  shift 52
 	DOT  shift 61
 	SEMI  reduce 44
 	RPAREN  reduce 44
 	COMMA  reduce 44
-	PLUS  reduce 44
-	MINUS  reduce 44
-	TIMES  reduce 44
-	DIVIDE  reduce 44
 	EQ  reduce 44
 	NEQ  reduce 44
 	LT  reduce 44
@@ -1379,225 +1509,89 @@ state 80
 	OR  reduce 44
 
 
-state 81
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr EQ expr .  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+state 85
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr GT expr .  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	PLUS  shift 49
 	MINUS  shift 50
 	TIMES  shift 51
 	DIVIDE  shift 52
-	LT  shift 55
-	LEQ  shift 56
-	GT  shift 57
-	GEQ  shift 58
 	DOT  shift 61
 	SEMI  reduce 45
 	RPAREN  reduce 45
 	COMMA  reduce 45
 	EQ  reduce 45
 	NEQ  reduce 45
+	LT  reduce 45
+	LEQ  reduce 45
+	GT  reduce 45
+	GEQ  reduce 45
 	AND  reduce 45
 	OR  reduce 45
 
 
-state 82
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr NEQ expr .  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+state 86
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr GEQ expr .  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	PLUS  shift 49
 	MINUS  shift 50
 	TIMES  shift 51
 	DIVIDE  shift 52
-	LT  shift 55
-	LEQ  shift 56
-	GT  shift 57
-	GEQ  shift 58
 	DOT  shift 61
 	SEMI  reduce 46
 	RPAREN  reduce 46
 	COMMA  reduce 46
 	EQ  reduce 46
 	NEQ  reduce 46
+	LT  reduce 46
+	LEQ  reduce 46
+	GT  reduce 46
+	GEQ  reduce 46
 	AND  reduce 46
 	OR  reduce 46
 
 
-state 83
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr LT expr .  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-
-	PLUS  shift 49
-	MINUS  shift 50
-	TIMES  shift 51
-	DIVIDE  shift 52
-	DOT  shift 61
-	SEMI  reduce 47
-	RPAREN  reduce 47
-	COMMA  reduce 47
-	EQ  reduce 47
-	NEQ  reduce 47
-	LT  reduce 47
-	LEQ  reduce 47
-	GT  reduce 47
-	GEQ  reduce 47
-	AND  reduce 47
-	OR  reduce 47
-
-
-state 84
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr LEQ expr .  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-
-	PLUS  shift 49
-	MINUS  shift 50
-	TIMES  shift 51
-	DIVIDE  shift 52
-	DOT  shift 61
-	SEMI  reduce 48
-	RPAREN  reduce 48
-	COMMA  reduce 48
-	EQ  reduce 48
-	NEQ  reduce 48
-	LT  reduce 48
-	LEQ  reduce 48
-	GT  reduce 48
-	GEQ  reduce 48
-	AND  reduce 48
-	OR  reduce 48
-
-
-state 85
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr GT expr .  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-
-	PLUS  shift 49
-	MINUS  shift 50
-	TIMES  shift 51
-	DIVIDE  shift 52
-	DOT  shift 61
-	SEMI  reduce 49
-	RPAREN  reduce 49
-	COMMA  reduce 49
-	EQ  reduce 49
-	NEQ  reduce 49
-	LT  reduce 49
-	LEQ  reduce 49
-	GT  reduce 49
-	GEQ  reduce 49
-	AND  reduce 49
-	OR  reduce 49
-
-
-state 86
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr GEQ expr .  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-
-	PLUS  shift 49
-	MINUS  shift 50
-	TIMES  shift 51
-	DIVIDE  shift 52
-	DOT  shift 61
-	SEMI  reduce 50
-	RPAREN  reduce 50
-	COMMA  reduce 50
-	EQ  reduce 50
-	NEQ  reduce 50
-	LT  reduce 50
-	LEQ  reduce 50
-	GT  reduce 50
-	GEQ  reduce 50
-	AND  reduce 50
-	OR  reduce 50
-
-
 state 87
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr AND expr .  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr AND expr .  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	PLUS  shift 49
 	MINUS  shift 50
@@ -1610,28 +1604,28 @@ state 87
 	GT  shift 57
 	GEQ  shift 58
 	DOT  shift 61
-	SEMI  reduce 51
-	RPAREN  reduce 51
-	COMMA  reduce 51
-	AND  reduce 51
-	OR  reduce 51
+	SEMI  reduce 47
+	RPAREN  reduce 47
+	COMMA  reduce 47
+	AND  reduce 47
+	OR  reduce 47
 
 
 state 88
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr OR expr .  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr OR expr .  (48)
+	expr : expr . DOT expr  (49)
 
 	PLUS  shift 49
 	MINUS  shift 50
@@ -1645,44 +1639,44 @@ state 88
 	GEQ  shift 58
 	AND  shift 59
 	DOT  shift 61
-	SEMI  reduce 52
-	RPAREN  reduce 52
-	COMMA  reduce 52
-	OR  reduce 52
+	SEMI  reduce 48
+	RPAREN  reduce 48
+	COMMA  reduce 48
+	OR  reduce 48
 
 
 state 89
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	expr : expr DOT expr .  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	expr : expr DOT expr .  (49)
 
 	DOT  shift 61
-	SEMI  reduce 53
-	RPAREN  reduce 53
-	COMMA  reduce 53
-	PLUS  reduce 53
-	MINUS  reduce 53
-	TIMES  reduce 53
-	DIVIDE  reduce 53
-	EQ  reduce 53
-	NEQ  reduce 53
-	LT  reduce 53
-	LEQ  reduce 53
-	GT  reduce 53
-	GEQ  reduce 53
-	AND  reduce 53
-	OR  reduce 53
+	SEMI  reduce 49
+	RPAREN  reduce 49
+	COMMA  reduce 49
+	PLUS  reduce 49
+	MINUS  reduce 49
+	TIMES  reduce 49
+	DIVIDE  reduce 49
+	EQ  reduce 49
+	NEQ  reduce 49
+	LT  reduce 49
+	LEQ  reduce 49
+	GT  reduce 49
+	GEQ  reduce 49
+	AND  reduce 49
+	OR  reduce 49
 
 
 state 90
@@ -1758,14 +1752,14 @@ state 92
 
 
 state 93
-	func : any_typ ID LPAREN . formals_opt RPAREN LBRACE stmts RBRACE  (27)
-	formals_opt : .  (31)
+	func : any_typ ID LPAREN . formals_opt RPAREN LBRACE stmts RBRACE  (25)
+	formals_opt : .  (27)
 
 	INT  shift 35
 	FLOAT  shift 36
 	BOOL  shift 37
 	STRING  shift 38
-	RPAREN  reduce 31
+	RPAREN  reduce 27
 
 	any_typ_not_void  goto 101
 	formals_opt  goto 102
@@ -1773,20 +1767,20 @@ state 93
 
 
 state 94
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	expr : GLOBAL ID ASSIGN expr .  (60)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	expr : GLOBAL ID ASSIGN expr .  (56)
 
 	PLUS  shift 49
 	MINUS  shift 50
@@ -1801,14 +1795,14 @@ state 94
 	AND  shift 59
 	OR  shift 60
 	DOT  shift 61
-	SEMI  reduce 60
-	RPAREN  reduce 60
-	COMMA  reduce 60
+	SEMI  reduce 56
+	RPAREN  reduce 56
+	COMMA  reduce 56
 
 
 state 95
 	vdecl_list : vdecl_list . vdecl  (23)
-	struct_decl : ID LBRACE vdecl_list . RBRACE SEMI  (30)
+	struct_decl : ID LBRACE vdecl_list . RBRACE SEMI  (26)
 
 	RBRACE  shift 104
 	INT  shift 35
@@ -1822,13 +1816,13 @@ state 95
 
 
 state 96
-	expr : ID LPAREN actuals_opt RPAREN .  (58)
+	expr : ID LPAREN actuals_opt RPAREN .  (54)
 
-	.  reduce 58
+	.  reduce 54
 
 
 state 97
-	actuals_list : actuals_list COMMA . expr  (64)
+	actuals_list : actuals_list COMMA . expr  (60)
 
 	LPAREN  shift 5
 	MINUS  shift 7
@@ -1874,19 +1868,19 @@ state 98
 
 state 99
 	stmt : FOR LPAREN expr_opt SEMI expr . SEMI expr_opt RPAREN stmt  (10)
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
 
 	SEMI  shift 109
 	PLUS  shift 49
@@ -1912,29 +1906,29 @@ state 100
 
 
 state 101
-	formal_list : any_typ_not_void . ID  (33)
+	formal_list : any_typ_not_void . ID  (29)
 
 	ID  shift 110
 	.  error
 
 
 state 102
-	func : any_typ ID LPAREN formals_opt . RPAREN LBRACE stmts RBRACE  (27)
+	func : any_typ ID LPAREN formals_opt . RPAREN LBRACE stmts RBRACE  (25)
 
 	RPAREN  shift 111
 	.  error
 
 
 state 103
-	formals_opt : formal_list .  (32)
-	formal_list : formal_list . COMMA any_typ ID  (34)
+	formals_opt : formal_list .  (28)
+	formal_list : formal_list . COMMA any_typ ID  (30)
 
 	COMMA  shift 112
-	RPAREN  reduce 32
+	RPAREN  reduce 28
 
 
 state 104
-	struct_decl : ID LBRACE vdecl_list RBRACE . SEMI  (30)
+	struct_decl : ID LBRACE vdecl_list RBRACE . SEMI  (26)
 
 	SEMI  shift 113
 	.  error
@@ -1954,20 +1948,20 @@ state 106
 
 
 state 107
-	expr : expr . PLUS expr  (41)
-	expr : expr . MINUS expr  (42)
-	expr : expr . TIMES expr  (43)
-	expr : expr . DIVIDE expr  (44)
-	expr : expr . EQ expr  (45)
-	expr : expr . NEQ expr  (46)
-	expr : expr . LT expr  (47)
-	expr : expr . LEQ expr  (48)
-	expr : expr . GT expr  (49)
-	expr : expr . GEQ expr  (50)
-	expr : expr . AND expr  (51)
-	expr : expr . OR expr  (52)
-	expr : expr . DOT expr  (53)
-	actuals_list : actuals_list COMMA expr .  (64)
+	expr : expr . PLUS expr  (37)
+	expr : expr . MINUS expr  (38)
+	expr : expr . TIMES expr  (39)
+	expr : expr . DIVIDE expr  (40)
+	expr : expr . EQ expr  (41)
+	expr : expr . NEQ expr  (42)
+	expr : expr . LT expr  (43)
+	expr : expr . LEQ expr  (44)
+	expr : expr . GT expr  (45)
+	expr : expr . GEQ expr  (46)
+	expr : expr . AND expr  (47)
+	expr : expr . OR expr  (48)
+	expr : expr . DOT expr  (49)
+	actuals_list : actuals_list COMMA expr .  (60)
 
 	PLUS  shift 49
 	MINUS  shift 50
@@ -1982,8 +1976,8 @@ state 107
 	AND  shift 59
 	OR  shift 60
 	DOT  shift 61
-	RPAREN  reduce 64
-	COMMA  reduce 64
+	RPAREN  reduce 60
+	COMMA  reduce 60
 
 
 state 108
@@ -2034,20 +2028,20 @@ state 109
 
 
 state 110
-	formal_list : any_typ_not_void ID .  (33)
+	formal_list : any_typ_not_void ID .  (29)
 
-	.  reduce 33
+	.  reduce 29
 
 
 state 111
-	func : any_typ ID LPAREN formals_opt RPAREN . LBRACE stmts RBRACE  (27)
+	func : any_typ ID LPAREN formals_opt RPAREN . LBRACE stmts RBRACE  (25)
 
 	LBRACE  shift 117
 	.  error
 
 
 state 112
-	formal_list : formal_list COMMA . any_typ ID  (34)
+	formal_list : formal_list COMMA . any_typ ID  (30)
 
 	INT  shift 35
 	FLOAT  shift 36
@@ -2061,9 +2055,9 @@ state 112
 
 
 state 113
-	struct_decl : ID LBRACE vdecl_list RBRACE SEMI .  (30)
+	struct_decl : ID LBRACE vdecl_list RBRACE SEMI .  (26)
 
-	.  reduce 30
+	.  reduce 26
 
 
 state 114
@@ -2087,7 +2081,7 @@ state 116
 
 
 state 117
-	func : any_typ ID LPAREN formals_opt RPAREN LBRACE . stmts RBRACE  (27)
+	func : any_typ ID LPAREN formals_opt RPAREN LBRACE . stmts RBRACE  (25)
 	stmts : .  (2)
 
 	.  reduce 2
@@ -2096,7 +2090,7 @@ state 117
 
 
 state 118
-	formal_list : formal_list COMMA any_typ . ID  (34)
+	formal_list : formal_list COMMA any_typ . ID  (30)
 
 	ID  shift 122
 	.  error
@@ -2136,7 +2130,7 @@ state 120
 
 state 121
 	stmts : stmts . stmt  (3)
-	func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts . RBRACE  (27)
+	func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts . RBRACE  (25)
 
 	LPAREN  shift 5
 	LBRACE  shift 6
@@ -2163,9 +2157,9 @@ state 121
 
 
 state 122
-	formal_list : formal_list COMMA any_typ ID .  (34)
+	formal_list : formal_list COMMA any_typ ID .  (30)
 
-	.  reduce 34
+	.  reduce 30
 
 
 state 123
@@ -2175,17 +2169,10 @@ state 123
 
 
 state 124
-	func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE .  (27)
+	func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE .  (25)
 
-	.  reduce 27
-
-
-Rules never reduced:
-	func_list :  (25)
-	func_list : func_list func  (26)
-	struc_func_decls :  (28)
-	struc_func_decls : struc_func_decls func  (29)
+	.  reduce 25
 
 
-48 terminals, 19 nonterminals
-66 grammar rules, 125 states
+48 terminals, 17 nonterminals
+62 grammar rules, 125 states
