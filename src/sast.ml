@@ -38,7 +38,9 @@ type stmt_t =
     fname : string;
     formals : (Ast.typ * string) list; 
     body : stmt_t list; (* need typed statements *)
-   }
+    sname : string option;
+  }
+
   and strc_t = {
     sname : string;
     vdecls : vdecl_t list;

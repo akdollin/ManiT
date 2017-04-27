@@ -57,7 +57,7 @@ stmt:
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | DEF func { Func($2) }
-  | STRUCT struct_dec { Struc($2) }
+  | STRUCT struct_decl { Struct($2) }
 
 expr_opt: 
     /* nothing */ { Noexpr }
@@ -65,20 +65,21 @@ expr_opt:
 
 vdecl_list:
   { [] }
-  | vdecl_list vdecl { $2::$1 }
+  | vdecl_list vdecl { $2 :: $1 }
 
 vdecl:
-  ID SEMI { Id($1) }
-  | ID ASSIGN expr   { Assign($1, $3) }
-
-
-struct_dec: 
-  ID LBRACE vdecl_list func_list RBRACE SEMI {{
-    sname = $1; vdecls = List.rev $3; funcs = List.rev $4 }} 
+  typ ID SEMI { Vdecl($1, $2) }
+  /* | ID ASSIGN expr SEMI { Assign($1, $3) } */
 
 func_list:
   { [] }
   | func_list func { $2::$1 }
+
+struct_decl: 
+  ID LBRACE vdecl_list func_list RBRACE SEMI 
+  { { sname = $1; 
+      vdecls = List.rev $3; 
+      funcs = List.rev $4  } } 
 
 func:
    typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE

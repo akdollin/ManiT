@@ -26,9 +26,9 @@ type expr =
   | Struct_make of string
   | Struct_access of expr * expr
 
-type vdecl = 
-  Id of (typ * string)
-  | Assign of string * expr
+type vdecl =
+    Vdecl of typ * string
+  (* | Assign of string * expr *)
 
 type stmt =
     Block of stmt list
@@ -39,6 +39,7 @@ type stmt =
   | While of expr * stmt
   | Func of func
   | Struc of strc
+
 and 
 func = {
     typ : typ;
@@ -46,6 +47,7 @@ func = {
     formals : (typ * string) list;
     body : stmt list;
 }
+
 and
 strc = {
   sname : string;
