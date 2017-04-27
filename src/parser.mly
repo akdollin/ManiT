@@ -63,45 +63,52 @@ expr_opt:
     /* nothing */ { Noexpr }
   | expr          { $1 }
 
+
+any_typ_not_void:
+  | STRING  { String }
+  | FLOAT  { Float }
+  | INT     { Int }
+  | BOOL    { Bool }
+
+any_typ:
+  any_typ_not_void  { $1 }
+  | VOID   { Void }
+
 vdecl_list:
   { [] }
   | vdecl_list vdecl { $2 :: $1 }
 
 vdecl:
-  typ ID SEMI { Vdecl($1, $2) }
-  /* | ID ASSIGN expr SEMI { Assign($1, $3) } */
+    any_typ_not_void ID SEMI { ($1, $2) }
 
 func_list:
   { [] }
   | func_list func { $2::$1 }
 
-struct_decl: 
-  ID LBRACE vdecl_list func_list RBRACE SEMI 
-  { { sname = $1; 
-      vdecls = List.rev $3; 
-      funcs = List.rev $4  } } 
 
 func:
-   typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
+   any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
    { { typ = $1;
        fname = $2;
        formals = $4;
        body = List.rev $7 } }
 
-typ:
-    INT { Int }
-  | BOOL { Bool }
-  | FLOAT { Float }
-  | STRING { String }
-  | VOID   { Void }
+struc_func_decls:
+    /* nothing */ { [] }
+  | struc_func_decls func { $2::$1 } 
+
+struct_decl: 
+  ID LBRACE vdecl_list RBRACE SEMI 
+  { { sname = $1; 
+      vdecls = List.rev $3  } } 
 
 formals_opt:
     /* nothing */ { [] }
   | formal_list   { List.rev $1 }
 
 formal_list:
-    typ ID { [($1, $2)] }
-  | formal_list COMMA typ ID { ($3, $4)  :: $1 }
+    any_typ_not_void ID { [($1, $2)] }
+  | formal_list COMMA any_typ ID { ($3, $4)  :: $1 }
 
 expr:
     INTLIT          { IntLit($1) }
