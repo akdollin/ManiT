@@ -24,12 +24,13 @@ let rec string_id_expr expr =
   | _ -> raise (Exceptions.ErrCatch "string_id_expr")
 
 (* Helper function to check for dups in a list *)
-let check_duplicates list_ (*exceptf*) =
-    let rec search = function
-        n1 :: n2 :: _ when n1 = n2 -> raise(Failure("duplicates exist")) (* (Failure (exceptf n1)) *)
-      | _ :: tl -> search tl
+let report_duplicate exceptf list =
+    let rec helper = function
+        n1 :: n2 :: _ when n1 = n2 -> raise (Failure (exceptf n1))
+      | _ :: t -> helper t
       | [] -> ()
-    in search (List.sort compare list_)
+    in helper (List.sort compare list)
+
 
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
@@ -177,14 +178,14 @@ let check_return_types func_typ func_body =
   List.iter (fun each_ret_typ -> (if (each_ret_typ != func_typ) 
   then raise(Failure("return types in fbody do not match with fdecl"))); ) ret_typs
 
-let rec check_stmt env struct_name = function
+let rec check_stmt env  = function
   Ast.Block(stmtlist) ->
     (* sets a new scope to scope passed in *)
     let new_scope = { parent = Some(env.scope); variables = [] } in
     let new_env = { scope = new_scope } in
     (* populates variables and annotates exprs by calling check_stmt *)
     (* adds new env to all stmts *)
-    let stmtlist = List.map (fun s -> check_stmt new_env struct_name s) stmtlist in 
+    let stmtlist = List.map (fun s -> check_stmt new_env s) stmtlist in 
     (* setting to *)
     new_env.scope.variables <- List.rev new_scope.variables;
     Block(stmtlist) (* new_env *)
@@ -211,18 +212,25 @@ let rec check_stmt env struct_name = function
     | true -> raise(Failure("cannot redeclare function with same name")); )
 
   (* struct stmt *)
-  | Ast.Struct(strc) ->
-    (* check vdecls. no need to attach types to vdecl. just check repeated names *)
-    let names = List.map (fun (t, id) -> id) strc.A.vdecls in
-    check_duplicates names;
+  | Ast.Struc(strc) ->
+
+    names = List.map 
+      (fun n -> 
+
+        (report_duplicate (fun n -> "duplicate struct field " ^ n) 
+          (List.map (fun (t, id) -> id) strc.A.vdecls) structs in
+
+
+
+    Struc(strct)
     (* make new scope and env with vars from vdecls. *)
-    let new_scope = { parent = Some(env.scope); variables = strc.A.vdecls } in
-    let new_env = { scope = new_scope } in
+(*     let new_scope = { parent = Some(env.scope); variables = strc.A.vdecls } in
+    let new_env = { scope = new_scope } in *)
 
     (* add to global env, filling each function field *)
 (*     let new_fdecls = List.map (fun f -> check_stmt new_env strc.A.sname f) strc.A.fdecls in
 (*  *)    let new_struct = { strc with fdecls = new_fdecls } (* name and vdecls unchanged. *) in
- *)    strct
+ *)    
 
   (* conditionals *)
   | Ast.If(e, s1, s2) ->

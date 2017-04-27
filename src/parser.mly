@@ -121,7 +121,7 @@ expr:
   | expr AND    expr { Binop($1, And,   $3) }
   | expr OR     expr { Binop($1, Or,    $3) }
   | expr DOT    expr { Struct_access($1, $3)}
-  | STRUCT ID        { Struct_make($2)}
+  | STRUCT ID ID       { Struct_make($2, $3)}
   | MINUS expr %prec NEG { Unop(Neg, $2) } 
   | NOT expr         { Unop(Not, $2) }
   | ID ASSIGN expr   { Assign($1, $3) }

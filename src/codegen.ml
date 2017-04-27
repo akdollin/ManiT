@@ -51,14 +51,14 @@ let translate (stmts) =
     | A.Void -> void_t  (* need void? see return types *)  
     | _ -> i32_t (* placed due to error. add string *) in 
   
-  (* Function that builds LLVM struct for one struct *)
+(*   (* Function that builds LLVM struct for one struct *)
   let define_struct_body s =
     let struct_t = try Hashtbl.find struct_types s.S.sname with | Not_found -> raise (Exceptions.BugCatch "defin_struct") in
   
     let vdecl_types = List.map (fun vdecl -> t) s.S.vdecls in
-        let vdecls = List.map ltype_of_typ vdecl_types in   
-        let vdecl_array = Array.of_list vdecls in 
-        L.struct_set_body struct_t vdecl_array false in
+    let vdecls = List.map ltype_of_typ vdecl_types in   
+    let vdecl_array = Array.of_list vdecls in 
+    L.struct_set_body struct_t vdecl_array false in *)
 
   let init_llvalue id t =
     let ltype = ltype_of_typ t in
