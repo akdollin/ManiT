@@ -26,6 +26,8 @@ type stmt_t =
   | For of expr_t * expr_t * expr_t * stmt_t
   | While of expr_t * stmt_t
   | Func of func_t 
+  | Struc of strc_t
+
 
   and func_t = {
     typ : Ast.typ; 

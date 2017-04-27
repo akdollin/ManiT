@@ -13,7 +13,7 @@ let global_env = { funcs = [] }
  *)
 (* this is the hash table used to store structs *)
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
-let struct_func_hash:(string, A.strc.func) Hashtbl.t = Hashtbl.create 10
+let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10
 
 
 (* Only call on struct or eventually array access *)
@@ -62,6 +62,13 @@ let exist_func name = try
 (* Search hash table to see if the struct exists *)
 let check_struct s =
   try Hashtbl.find structs_hash s; true with Not_found -> false
+
+let check_env env = 
+  if env.parent == None then true else false
+
+let check_structs_all env strc = 
+  _ -> ""
+ 
 
 (*check_expr: core type-matching function that recursively annotates type of each expr. *)
 let rec check_expr (env : environment) = function
@@ -181,8 +188,6 @@ let check_return_types func_typ func_body =
   List.iter (fun each_ret_typ -> (if (each_ret_typ != func_typ) 
   then raise(Failure("return types in fbody do not match with fdecl"))); ) ret_typs
 
-(* let struct_func_check func list
- *)
 (* check_stmt *)
 let rec check_stmt env = function
   Ast.Block(stmtlist) ->
@@ -201,7 +206,9 @@ let rec check_stmt env = function
   (* Func.
   checks env. checks if all return types match with fdecl. adds fdecl to env. *)
   | Ast.Func(func) ->
-    (* add fdecl to global env if it hasn't declared previously. *)
+(*   ALLOWS FOR NESTED FUNCTIONs
+ *)    
+(* add fdecl to global env if it hasn't declared previously. *)
     ( match exist_func func.fname with 
       false ->
         (* make new scope and env with formals *)
@@ -217,13 +224,22 @@ let rec check_stmt env = function
         Func(sast_func)
     | true -> raise(Failure("cannot redeclare function with same name")); )
   | Ast.Struc(strc) ->
-    (match check_struct strc.sname with
-      false ->
-        Hashtbl.add struct_func_hash strc.funcs.fname strc.funcs; 
-        let sast_strc = { sname = strc.sname; attributes = strc.attributes } in
-        Hashtbl.add structs_hash strc.sname sast_strc;
-        Struc(sast_strc)
-    | true -> raise(Failure("duplicate struct")); )
+    (match check_env env with
+      true ->
+        (match check_struct strc.sname with
+          false ->
+            check_structs_all strc env; 
+    (*         let new_scope = { parent = Some(env.scope); variables = [] } in
+            let new_env = { scope = new_scope } in
+
+            let struct_vdecl = List.map (fun stmt -> check_stmt new_env stmt) strc.attributes in
+            let struct_func = List.map (fun stmt -> check_stmt new_env stmt) strc.funcs in
+            let sast_strc = { sname = strc.sname; attributes = struct_vdecl; funcs = struct_func } in
+            Hashtbl.add structs_hash strc.sname sast_strc;
+            Struc(sast_strc) *)
+        | true -> raise(Failure("duplicate struct")); )
+      | false -> raise(Failure("Structs must be global"));)
+
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
     let (e, typ) = check_expr env e in

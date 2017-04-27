@@ -59,7 +59,6 @@ stmt:
   | DEF func { Func($2) }
   | STRUCT struct_dec { Struc($2) }
 
-
 expr_opt: 
     /* nothing */ { Noexpr }
   | expr          { $1 }
@@ -73,7 +72,7 @@ vdecl:
 
 struct_dec: 
   ID LBRACE vdecl_list func_list RBRACE SEMI {{
-    sname = $1; attributes = List.rev $3; funcs = List.rev $4 }} 
+    sname = $1; vdecls = List.rev $3; funcs = List.rev $4 }} 
 
 func_list:
   { [] }

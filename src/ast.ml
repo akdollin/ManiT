@@ -8,7 +8,11 @@ type uop = Neg | Not
 
 type typ = Int | Bool | Float | String | Void | Struct_typ of string 
 (* need to check if formals have Void typ *)
-type bind = typ * string
+(* type bind = typ * string
+ *)
+
+type vdecl = 
+  Id of (typ * string)
 
 type expr =
     IntLit of int
@@ -38,13 +42,13 @@ and
 func = {
     typ : typ;
     fname : string;
-    formals : bind list;
+    formals : (typ * string) list;
     body : stmt list;
 }
 and
 strc = {
   sname : string;
-  attributes : bind list;
+  vdecls : vdecl list;
   funcs : func list;
 }
 
