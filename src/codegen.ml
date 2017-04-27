@@ -241,26 +241,26 @@ let translate (stmts) =
         (* lookup id, store e` in s. stack alloced already. *)
         let e' = build_expr builder e in
           ignore (L.build_store e' (lookup id) builder); e'
-      | S.Call ("print", [e]), t ->
+      | S.Call ("print", [(e, expr_t)]), t ->
           (*let t = (* find the type of it *) in*)
-          let var = build_expr builder e in
-          match var with
-          | S.IntLit var, t ->
+          let var = build_expr builder (e,expr_t) in
+          (match expr_t with
+          | A.Int ->
             L.build_call printf_func [| int_format_str ; (var) |]
-            "printf" builder
-          | S.FloatLit var, t ->
+          | A.Float ->
             L.build_call printf_func [| int_format_str ; (var) |]
-            "printf" builder
-          | S.BoolLit var, t ->
-            let tr = L.build_global_stringptr "true" "" llbuilder in
-            let fa = L.build_global_stringptr "false" "" llbuilder in
+          | A.Bool ->
+            L.build_call printf_func [| int_format_str ; (var) |]
+            (*
+            let tr = L.build_global_stringptr "true" "" builder in
+            let fa = L.build_global_stringptr "false" "" builder in
             if (L.is_null var) then L.build_call printf_func [| string_format_str ; (tr) |]
-            "printf" builder
             else L.build_call printf_func [| string_format_str ; (fa) |]
-            "printf" builder
-          | S.StringLit var, t ->
+            *)
+          | A.String ->
             L.build_call printf_func [| string_format_str ; (var) |]
-            "printf" builder
+          | A.Void ->
+            L.build_call printf_func [| string_format_str ; (L.build_global_stringptr "" "" builder) |]) "printf" builder
       | S.Call (f, act), t ->
          let (fdef, fdecl) = StringMap.find f prototypes in
          let actuals = List.rev (List.map (build_expr builder) (List.rev act)) in
