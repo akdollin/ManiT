@@ -19,9 +19,14 @@ def void bar(int b)
 
 bar(4);
 
-def void test(int a)
+def void test()
 {
 	print("hello");
 }
 
-test(4);
+test();
+
+struct tmp {
+	int tmp1;
+	int tmp2;
+};
