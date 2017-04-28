@@ -1,0 +1,96 @@
+### Starting build.
+# Target: manit.ml.depends, tags: { package(llvm), package(llvm.analysis), extension:ml, file:manit.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules manit.ml > manit.ml.depends # cached
+# Target: codegen.ml.depends, tags: { package(llvm), package(llvm.analysis), extension:ml, file:codegen.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules codegen.ml > codegen.ml.depends # cached
+# Target: ast.ml.depends, tags: { package(llvm), package(llvm.analysis), extension:ml, file:ast.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules ast.ml > ast.ml.depends # cached
+# Target: ast.cmo, tags: { package(llvm), package(llvm.analysis), byte, compile, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o ast.cmo ast.ml # cached
+# Target: exceptions.ml.depends, tags: { package(llvm), package(llvm.analysis), extension:ml, file:exceptions.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules exceptions.ml > exceptions.ml.depends # cached
+# Target: exceptions.cmo, tags: { package(llvm), package(llvm.analysis), byte, compile, extension:cmo, extension:ml, file:exceptions.cmo, file:exceptions.ml, implem, ocaml, quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o exceptions.cmo exceptions.ml # cached
+# Target: sast.ml.depends, tags: { package(llvm), package(llvm.analysis), extension:ml, file:sast.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules sast.ml > sast.ml.depends # cached
+# Target: sast.cmo, tags: { package(llvm), package(llvm.analysis), byte, compile, extension:cmo, extension:ml, file:sast.cmo, file:sast.ml, implem, ocaml, quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o sast.cmo sast.ml # cached
+# Target: codegen.cmo, tags: { package(llvm), package(llvm.analysis), byte, compile, extension:cmo, extension:ml, file:codegen.cmo, file:codegen.ml, implem, ocaml, quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o codegen.cmo codegen.ml # cached
+# Target: parser.mly, tags: { package(llvm), package(llvm.analysis), extension:mly, file:parser.mly, infer, ocaml, ocamlyacc, parser, quiet }
+ocamlyacc parser.mly # cached
+# Target: parser.mli.depends, tags: { package(llvm), package(llvm.analysis), extension:mli, file:parser.mli, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules parser.mli > parser.mli.depends # cached
+# Target: parser.cmi, tags: { package(llvm), package(llvm.analysis), byte, compile, extension:mli, file:parser.mli, interf, ocaml, quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o parser.cmi parser.mli # cached
+# Target: scanner.mll, tags: { package(llvm), package(llvm.analysis), extension:mll, file:scanner.mll, lexer, ocaml, ocamllex, quiet }
+ocamllex.opt -q scanner.mll # cached
+# Target: scanner.ml.depends, tags: { package(llvm), package(llvm.analysis), extension:ml, file:scanner.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules scanner.ml > scanner.ml.depends # cached
+# Target: scanner.cmo, tags: { package(llvm), package(llvm.analysis), byte, compile, extension:cmo, extension:ml, file:scanner.cmo, file:scanner.ml, implem, ocaml, quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o scanner.cmo scanner.ml # cached
+# Target: semant.ml.depends, tags: { package(llvm), package(llvm.analysis), extension:ml, file:semant.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules semant.ml > semant.ml.depends # cached
+# Target: semant.cmo, tags: { package(llvm), package(llvm.analysis), byte, compile, extension:cmo, extension:ml, file:semant.cmo, file:semant.ml, implem, ocaml, quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o semant.cmo semant.ml
++ ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o semant.cmo semant.ml
+File "semant.ml", line 68, characters 2-54:
+Warning 10: this expression should have type unit.
+File "semant.ml", line 72, characters 41-4070:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(Noexpr|GlobalAsn (_, _)|Struct_make _|Struct_access (_, _))
+File "semant.ml", line 208, characters 28-33:
+Warning 40: fname was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 208, characters 28-33:
+Warning 42: this use of fname relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+File "semant.ml", line 211, characters 69-76:
+Warning 40: formals was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 211, characters 69-76:
+Warning 42: this use of formals relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+File "semant.ml", line 215, characters 77-81:
+Warning 40: body was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 215, characters 77-81:
+Warning 42: this use of body relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+File "semant.ml", line 216, characters 37-40:
+Warning 40: typ was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 216, characters 37-40:
+Warning 42: this use of typ relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+File "semant.ml", line 216, characters 55-60:
+Warning 40: fname was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 216, characters 55-60:
+Warning 42: this use of fname relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+File "semant.ml", line 216, characters 77-84:
+Warning 40: formals was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 216, characters 77-84:
+Warning 42: this use of formals relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+File "semant.ml", line 219, characters 32-35:
+Warning 40: typ was selected from type Ast.func.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "semant.ml", line 219, characters 32-35:
+Warning 42: this use of typ relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+File "semant.ml", line 226, characters 129-133:
+Error: This expression has type Ast.strc
+       but an expression was expected of type A.strc list
+Command exited with code 2.
+# Compilation unsuccessful.
