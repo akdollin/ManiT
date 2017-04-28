@@ -165,9 +165,11 @@ let translate (stmts) =
     (* iterate on expr stmts, skip other stmts *)
     let build_global2 m stmt = match stmt with 
         S.Expr e -> build_global1 m e
-      | S.Vdecl (typ, name) ->
-        let init = L.const_named_struct (find_struct_name name) [||] in 
-        (L.define_global name init the_module); m
+      | S.Vdecl (typ, name) -> (match typ with 
+          A.Struct_typ(typString) -> 
+            let init = L.const_named_struct (find_struct_name typString) [||] in 
+            (L.define_global name init the_module);m
+        | _ -> raise(Failure("ManiT is type inferred. Something is wrong.")))
       | _ -> m
     in
   List.fold_left build_global2 StringMap.empty stmts in
@@ -375,6 +377,8 @@ let translate (stmts) =
 
       | S.For (e1, e2, e3, body) -> build_stmt builder
             ( S.Block [S.Expr e1 ; S.While (e2, S.Block [body ; S.Expr e3]) ] )
+      | S.Vdecl(t,n) -> builder
+    
 
     in
 
