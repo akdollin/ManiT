@@ -21,11 +21,15 @@ let translate (stmts) =
   let the_module = L.create_module context "ManiT"
 
   (* and i64_t  = L.i64_type  context *)
-  and f32_t  = L.float_type context
+  and f32_t  = L.double_type context
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
   and void_t = L.void_type context in (* void? *)
+  
+  let string_t = L.pointer_type i8_t
+  and i8ptr_t = L.pointer_type i8_t
+  in
   
   (* Declare printf(), which the print built-in function will call *)
   let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
@@ -34,7 +38,7 @@ let translate (stmts) =
   let ltype_of_typ = function
       A.Int -> i32_t
     | A.Float -> f32_t
-    | A.String -> i8_t (* ptr? *)
+    | A.String -> string_t (* ptr? *)
     | A.Bool -> i1_t
     | A.Void -> void_t  (* need void? see return types *)  
     | _ -> i32_t (* placed due to error. add string *) in
@@ -48,13 +52,25 @@ let translate (stmts) =
     | _ -> 777 (*for error checking *) in
   *)  
   
+  (*
+  let lvalue_of_lit e t =
+      let ltype = ltype_of_typ t in
+      match t with
+        A.Int -> L.const_int ltype e
+      | A.Float -> L.const_float ltype 0.0
+      | A.Bool -> L.const_int ltype e
+      | A.String -> L.const_pointer_null i8_t
+      | _ -> L.const_int ltype 777 (* for errors *) in
+    *)
+
+
   let init_llvalue id t =
     let ltype = ltype_of_typ t in
     match t with 
       A.Int | A.Bool -> L.const_int ltype 0
     | A.Float -> L.const_float ltype 0.0
-    | A.String -> L.const_pointer_null i8_t
-    | _ -> L.const_int ltype 777 (* for errors *) in 
+    | A.String -> L.const_pointer_null string_t
+    | _ -> L.const_int ltype 777 (* for errors *) in
 
   (* alloc globals *)
   let globals = 
@@ -212,7 +228,7 @@ let translate (stmts) =
       | S.FloatLit f, t -> L.const_float f32_t f
       (*| A.DoubleLit d, t -> L.const_double i64_t d *)
       | S.BoolLit b, t -> L.const_int i1_t (if b then 1 else 0)
-      | S.StringLit s, t -> L.build_global_string s "" builder
+      | S.StringLit s, t -> L.build_global_stringptr s "" builder
       (* | A.Noexpr -> L.const_int i32_t 0 *)
       | S.Id s, t -> L.build_load (lookup s) s builder (* R.H.S lookup *)
       | S.Binop (e1, op, e2), t ->
@@ -241,9 +257,25 @@ let translate (stmts) =
         (* lookup id, store e` in s. stack alloced already. *)
         let e' = build_expr builder e in
           ignore (L.build_store e' (lookup id) builder); e'
-      | S.Call ("print", [e]), t | S.Call ("printb", [e]), t -> (* check the type, if float fomrat str, etc*)
-          L.build_call printf_func [| int_format_str ; (build_expr builder e) |]
-            "printf" builder
+      | S.Call ("print", [(e, expr_t)]), t ->
+      (*let t = (* find the type of it *) in*)
+        let var = build_expr builder (e,expr_t) in
+        (match expr_t with
+        | A.Int ->
+            L.build_call printf_func [| int_format_str ; (var) |]
+        | A.Float ->
+            L.build_call printf_func [| float_format_str ; (var) |]
+        | A.Bool ->
+                (*
+            let tr = L.build_global_stringptr "true" "" builder in
+            let fa = L.build_global_stringptr "false" "" builder in
+            if (L.is_null var) then L.build_call printf_func [| string_format_str ; (fa) |]
+            else L.build_call printf_func [| string_format_str ; (tr) |] *)
+            L.build_call printf_func [| int_format_str ; (var) |]
+        | A.String ->
+            L.build_call printf_func [| string_format_str ; (var) |]
+        | A.Void ->
+            L.build_call printf_func [| string_format_str ; (L.build_global_stringptr "" "" builder) |]) "printf" builder
       | S.Call (f, act), t ->
          let (fdef, fdecl) = StringMap.find f prototypes in
          let actuals = List.rev (List.map (build_expr builder) (List.rev act)) in

@@ -123,7 +123,10 @@ let rec check_expr (env : environment) = function
   | Ast.Call(name, actuals) ->
     (* check types to each actuals and get types of formals from fdecl. *)
     let typed_actuals = List.map (fun e -> (check_expr env e)) actuals in
-    let func = try find_func name with Not_found -> 
+    match name with
+    | "print" -> Call("print", typed_actuals), A.Int
+    | _ ->
+    let func = try find_func name with Not_found ->
       raise(Failure("undefined function was called.")) in
 
     let match_types formals actuals = match formals, actuals with
