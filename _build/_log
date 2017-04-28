@@ -1,0 +1,21 @@
+### Starting build.
+# Target: manit.ml.depends, tags: { extension:ml, file:manit.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules manit.ml > manit.ml.depends
+# Target: codegen.ml.depends, tags: { extension:ml, file:codegen.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules codegen.ml > codegen.ml.depends
+# Target: ast.ml.depends, tags: { extension:ml, file:ast.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules ast.ml > ast.ml.depends
+# Target: sast.ml.depends, tags: { extension:ml, file:sast.ml, ocaml, ocamldep, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamldep -package llvm.analysis -package llvm -modules sast.ml > sast.ml.depends
+# Target: ast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o ast.cmo ast.ml
+# Target: sast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:sast.cmo, file:sast.ml, implem, ocaml, package(llvm), package(llvm.analysis), quiet }
+ocamlfind ocamlc -c -w +a-4 -package llvm.analysis -package llvm -o sast.cmo sast.ml
+# Target: parser.mly, tags: { extension:mly, file:parser.mly, infer, ocaml, ocamlyacc, package(llvm), package(llvm.analysis), parser, quiet }
+/usr/bin/ocamlyacc parser.mly
++ /usr/bin/ocamlyacc parser.mly
+File "parser.mly", line 11: syntax error
+<<<<<<< HEAD
+^
+Command exited with code 1.
+# Compilation unsuccessful.
