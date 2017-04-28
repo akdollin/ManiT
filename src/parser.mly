@@ -101,6 +101,10 @@ formal_list:
     any_typ_not_void ID { [($1, $2)] }
   | formal_list COMMA any_typ ID { ($3, $4)  :: $1 }
 
+array_list:
+    expr                  { [$1] }
+  | array_list COMMA expr { $1 :: $3 }
+
 expr:
     INTLIT          { IntLit($1) }
   | FLOATLIT        { FloatLit($1) }
@@ -108,6 +112,7 @@ expr:
   | TRUE             { BoolLit(true) }
   | FALSE            { BoolLit(false) }
   | ID               { Id($1) }
+  | LBRACK array_list RBRACK    { ArrayLit($2) }
   | expr PLUS   expr { Binop($1, Add,   $3) }
   | expr MINUS  expr { Binop($1, Sub,   $3) }
   | expr TIMES  expr { Binop($1, Mult,  $3) }

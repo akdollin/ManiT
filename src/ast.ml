@@ -6,7 +6,7 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Float | String | Void | Struct_typ of string
+type typ = Int | Bool | Float | String | Void | Struct_typ of string | Array_typ of typ * int
 
 type bind = typ * string
 
@@ -25,6 +25,7 @@ type expr =
   | Unop of uop * expr
   | Assign of string * expr
   | Call of string * expr list (*fname and actuals*)
+  | ArrayLit of expr list
   | Noexpr (* ERROR? is Noexpr ok? *) 
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
   | Struct_make of string * string
@@ -54,8 +55,8 @@ func = {
 
 and
 strc = {
-  sname : string;
-  vdecls : bind list;
+    sname : string;
+    vdecls : bind list;
 (*   vdecls : vdecl list;*)
 }
 

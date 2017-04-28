@@ -18,6 +18,40 @@ let is_assignable t1 t2 = match t1, t2 with
     | _ -> false
 (* let is_assignable t1 t2 = if t1 = t2 then true else false *)
 
+(* Returns a range [a,b). E.g.
+ * range 1 5 = [1;2;3;4]
+ *)
+let range a b =
+    if a = b - 1 then
+        [a]
+    else
+        a::(range(a + 1) b)
+
+(* checks if all the elements in the list are the same *)
+let all_the_same = function
+    | [] -> true
+    | lst ->
+        (let hd = (List.hd lst) in
+        List.for_all ((=) hd) lst)
+
+
+(* check array literals *)
+(* 
+ * if all elements in the list are the same, then return first element of the list 
+ *)
+let check_array_literal env global_env l =
+    (*TODO: DO THIS*)
+    let get_unique_elt lst =
+        if (all_the_same lst) && (List.length lst > 0) then
+            (List.hd lst)
+        else
+            raise (Failure("Array literal values must be the same types"))
+    in
+    match l with
+        Ast.ArrayLit(exprs) ->
+            let keys = List.map (fun i -> (Ast.Int i)) (range 0 (List.length exprs)) in
+    (*TODO: DO MORE*)
+
 (* finds var in scope *)
 let rec find_var scope name = try
   (*List.find ('a -> bool) -> a' list
@@ -69,6 +103,10 @@ let rec check_expr (env : environment) = function
   | Ast.Id(name) -> let (name, typ) = try find_var env.scope name with 
       Not_found -> raise (Failure("undeclared identifier !!!!" ^ name)) in 
       Id(name), typ
+
+  (* Array literal *)
+  | Ast.ArrayLit(l) ->
+      check_array_literal env global_env l
   
   (* Assignment(string, expr)
   checks expr of R.H.S, and compares type of expr to that of L.H.S from its declaration. 
