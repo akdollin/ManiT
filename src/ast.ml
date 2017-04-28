@@ -27,12 +27,12 @@ type expr =
   | Call of string * expr list (*fname and actuals*)
   | Noexpr (* ERROR? is Noexpr ok? *) 
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
-  | Struct_make of string
+  | Struct_make of string * string
   | Struct_access of expr * expr
 
-type vdecl =
+(* type vdecl =
     Vdecl of typ * string
-  (* | Assign of string * expr *)
+  (* | Assign of string * expr *) *)
 
 type stmt =
     Block of stmt list

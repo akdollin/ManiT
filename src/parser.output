@@ -61,7 +61,7 @@
   47       | expr AND expr
   48       | expr OR expr
   49       | expr DOT expr
-  50       | STRUCT ID
+  50       | STRUCT ID ID
   51       | MINUS expr
   52       | NOT expr
   53       | ID ASSIGN expr
@@ -281,7 +281,7 @@ state 16
 
 state 17
 	stmt : STRUCT . struct_decl  (13)
-	expr : STRUCT . ID  (50)
+	expr : STRUCT . ID ID  (50)
 
 	ID  shift 44
 	.  error
@@ -378,7 +378,7 @@ state 24
 
 
 state 25
-	expr : STRUCT . ID  (50)
+	expr : STRUCT . ID ID  (50)
 
 	ID  shift 62
 	.  error
@@ -670,23 +670,11 @@ state 43
 
 state 44
 	struct_decl : ID . LBRACE vdecl_list RBRACE SEMI  (26)
-	expr : STRUCT ID .  (50)
+	expr : STRUCT ID . ID  (50)
 
 	LBRACE  shift 72
-	SEMI  reduce 50
-	PLUS  reduce 50
-	MINUS  reduce 50
-	TIMES  reduce 50
-	DIVIDE  reduce 50
-	EQ  reduce 50
-	NEQ  reduce 50
-	LT  reduce 50
-	LEQ  reduce 50
-	GT  reduce 50
-	GEQ  reduce 50
-	AND  reduce 50
-	OR  reduce 50
-	DOT  reduce 50
+	ID  shift 73
+	.  error
 
 
 state 45
@@ -712,9 +700,9 @@ state 46
 	ID  shift 21
 	RPAREN  reduce 57
 
-	expr  goto 73
-	actuals_opt  goto 74
-	actuals_list  goto 75
+	expr  goto 74
+	actuals_opt  goto 75
+	actuals_list  goto 76
 
 
 state 47
@@ -733,7 +721,7 @@ state 47
 	ID  shift 21
 	.  error
 
-	expr  goto 76
+	expr  goto 77
 
 
 state 48
@@ -758,7 +746,7 @@ state 49
 	ID  shift 21
 	.  error
 
-	expr  goto 77
+	expr  goto 78
 
 
 state 50
@@ -777,7 +765,7 @@ state 50
 	ID  shift 21
 	.  error
 
-	expr  goto 78
+	expr  goto 79
 
 
 state 51
@@ -796,7 +784,7 @@ state 51
 	ID  shift 21
 	.  error
 
-	expr  goto 79
+	expr  goto 80
 
 
 state 52
@@ -815,7 +803,7 @@ state 52
 	ID  shift 21
 	.  error
 
-	expr  goto 80
+	expr  goto 81
 
 
 state 53
@@ -834,7 +822,7 @@ state 53
 	ID  shift 21
 	.  error
 
-	expr  goto 81
+	expr  goto 82
 
 
 state 54
@@ -853,7 +841,7 @@ state 54
 	ID  shift 21
 	.  error
 
-	expr  goto 82
+	expr  goto 83
 
 
 state 55
@@ -872,7 +860,7 @@ state 55
 	ID  shift 21
 	.  error
 
-	expr  goto 83
+	expr  goto 84
 
 
 state 56
@@ -891,7 +879,7 @@ state 56
 	ID  shift 21
 	.  error
 
-	expr  goto 84
+	expr  goto 85
 
 
 state 57
@@ -910,7 +898,7 @@ state 57
 	ID  shift 21
 	.  error
 
-	expr  goto 85
+	expr  goto 86
 
 
 state 58
@@ -929,7 +917,7 @@ state 58
 	ID  shift 21
 	.  error
 
-	expr  goto 86
+	expr  goto 87
 
 
 state 59
@@ -948,7 +936,7 @@ state 59
 	ID  shift 21
 	.  error
 
-	expr  goto 87
+	expr  goto 88
 
 
 state 60
@@ -967,7 +955,7 @@ state 60
 	ID  shift 21
 	.  error
 
-	expr  goto 88
+	expr  goto 89
 
 
 state 61
@@ -986,13 +974,14 @@ state 61
 	ID  shift 21
 	.  error
 
-	expr  goto 89
+	expr  goto 90
 
 
 state 62
-	expr : STRUCT ID .  (50)
+	expr : STRUCT ID . ID  (50)
 
-	.  reduce 50
+	ID  shift 73
+	.  error
 
 
 state 63
@@ -1030,7 +1019,7 @@ state 66
 	expr : expr . OR expr  (48)
 	expr : expr . DOT expr  (49)
 
-	RPAREN  shift 90
+	RPAREN  shift 91
 	PLUS  shift 49
 	MINUS  shift 50
 	TIMES  shift 51
@@ -1083,7 +1072,7 @@ state 67
 state 68
 	stmt : FOR LPAREN expr_opt . SEMI expr SEMI expr_opt RPAREN stmt  (10)
 
-	SEMI  shift 91
+	SEMI  shift 92
 	.  error
 
 
@@ -1103,7 +1092,7 @@ state 69
 	expr : expr . OR expr  (48)
 	expr : expr . DOT expr  (49)
 
-	RPAREN  shift 92
+	RPAREN  shift 93
 	PLUS  shift 49
 	MINUS  shift 50
 	TIMES  shift 51
@@ -1123,7 +1112,7 @@ state 69
 state 70
 	func : any_typ ID . LPAREN formals_opt RPAREN LBRACE stmts RBRACE  (25)
 
-	LPAREN  shift 93
+	LPAREN  shift 94
 	.  error
 
 
@@ -1143,7 +1132,7 @@ state 71
 	ID  shift 21
 	.  error
 
-	expr  goto 94
+	expr  goto 95
 
 
 state 72
@@ -1152,10 +1141,16 @@ state 72
 
 	.  reduce 22
 
-	vdecl_list  goto 95
+	vdecl_list  goto 96
 
 
 state 73
+	expr : STRUCT ID ID .  (50)
+
+	.  reduce 50
+
+
+state 74
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1188,22 +1183,22 @@ state 73
 	COMMA  reduce 59
 
 
-state 74
+state 75
 	expr : ID LPAREN actuals_opt . RPAREN  (54)
 
-	RPAREN  shift 96
+	RPAREN  shift 97
 	.  error
 
 
-state 75
+state 76
 	actuals_opt : actuals_list .  (58)
 	actuals_list : actuals_list . COMMA expr  (60)
 
-	COMMA  shift 97
+	COMMA  shift 98
 	RPAREN  reduce 58
 
 
-state 76
+state 77
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1237,7 +1232,7 @@ state 76
 	COMMA  reduce 53
 
 
-state 77
+state 78
 	expr : expr . PLUS expr  (37)
 	expr : expr PLUS expr .  (37)
 	expr : expr . MINUS expr  (38)
@@ -1271,7 +1266,7 @@ state 77
 	OR  reduce 37
 
 
-state 78
+state 79
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr MINUS expr .  (38)
@@ -1305,7 +1300,7 @@ state 78
 	OR  reduce 38
 
 
-state 79
+state 80
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1339,7 +1334,7 @@ state 79
 	OR  reduce 39
 
 
-state 80
+state 81
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1373,7 +1368,7 @@ state 80
 	OR  reduce 40
 
 
-state 81
+state 82
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1407,7 +1402,7 @@ state 81
 	OR  reduce 41
 
 
-state 82
+state 83
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1441,7 +1436,7 @@ state 82
 	OR  reduce 42
 
 
-state 83
+state 84
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1475,7 +1470,7 @@ state 83
 	OR  reduce 43
 
 
-state 84
+state 85
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1509,7 +1504,7 @@ state 84
 	OR  reduce 44
 
 
-state 85
+state 86
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1543,7 +1538,7 @@ state 85
 	OR  reduce 45
 
 
-state 86
+state 87
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1577,7 +1572,7 @@ state 86
 	OR  reduce 46
 
 
-state 87
+state 88
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1611,7 +1606,7 @@ state 87
 	OR  reduce 47
 
 
-state 88
+state 89
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1645,7 +1640,7 @@ state 88
 	OR  reduce 48
 
 
-state 89
+state 90
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1679,7 +1674,7 @@ state 89
 	OR  reduce 49
 
 
-state 90
+state 91
 	stmt : IF LPAREN expr RPAREN . stmt  (8)
 	stmt : IF LPAREN expr RPAREN . stmt ELSE stmt  (9)
 
@@ -1702,11 +1697,11 @@ state 90
 	ID  shift 21
 	.  error
 
-	stmt  goto 98
+	stmt  goto 99
 	expr  goto 24
 
 
-state 91
+state 92
 	stmt : FOR LPAREN expr_opt SEMI . expr SEMI expr_opt RPAREN stmt  (10)
 
 	LPAREN  shift 5
@@ -1722,10 +1717,10 @@ state 91
 	ID  shift 21
 	.  error
 
-	expr  goto 99
+	expr  goto 100
 
 
-state 92
+state 93
 	stmt : WHILE LPAREN expr RPAREN . stmt  (11)
 
 	LPAREN  shift 5
@@ -1747,11 +1742,11 @@ state 92
 	ID  shift 21
 	.  error
 
-	stmt  goto 100
+	stmt  goto 101
 	expr  goto 24
 
 
-state 93
+state 94
 	func : any_typ ID LPAREN . formals_opt RPAREN LBRACE stmts RBRACE  (25)
 	formals_opt : .  (27)
 
@@ -1761,12 +1756,12 @@ state 93
 	STRING  shift 38
 	RPAREN  reduce 27
 
-	any_typ_not_void  goto 101
-	formals_opt  goto 102
-	formal_list  goto 103
+	any_typ_not_void  goto 102
+	formals_opt  goto 103
+	formal_list  goto 104
 
 
-state 94
+state 95
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1800,28 +1795,28 @@ state 94
 	COMMA  reduce 56
 
 
-state 95
+state 96
 	vdecl_list : vdecl_list . vdecl  (23)
 	struct_decl : ID LBRACE vdecl_list . RBRACE SEMI  (26)
 
-	RBRACE  shift 104
+	RBRACE  shift 105
 	INT  shift 35
 	FLOAT  shift 36
 	BOOL  shift 37
 	STRING  shift 38
 	.  error
 
-	any_typ_not_void  goto 105
-	vdecl  goto 106
+	any_typ_not_void  goto 106
+	vdecl  goto 107
 
 
-state 96
+state 97
 	expr : ID LPAREN actuals_opt RPAREN .  (54)
 
 	.  reduce 54
 
 
-state 97
+state 98
 	actuals_list : actuals_list COMMA . expr  (60)
 
 	LPAREN  shift 5
@@ -1837,14 +1832,14 @@ state 97
 	ID  shift 21
 	.  error
 
-	expr  goto 107
+	expr  goto 108
 
 
-state 98
+state 99
 	stmt : IF LPAREN expr RPAREN stmt .  (8)
 	stmt : IF LPAREN expr RPAREN stmt . ELSE stmt  (9)
 
-	ELSE  shift 108
+	ELSE  shift 109
 	LPAREN  reduce 8
 	LBRACE  reduce 8
 	RBRACE  reduce 8
@@ -1866,7 +1861,7 @@ state 98
 	EOF  reduce 8
 
 
-state 99
+state 100
 	stmt : FOR LPAREN expr_opt SEMI expr . SEMI expr_opt RPAREN stmt  (10)
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
@@ -1882,7 +1877,7 @@ state 99
 	expr : expr . OR expr  (48)
 	expr : expr . DOT expr  (49)
 
-	SEMI  shift 109
+	SEMI  shift 110
 	PLUS  shift 49
 	MINUS  shift 50
 	TIMES  shift 51
@@ -1899,55 +1894,55 @@ state 99
 	.  error
 
 
-state 100
+state 101
 	stmt : WHILE LPAREN expr RPAREN stmt .  (11)
 
 	.  reduce 11
 
 
-state 101
+state 102
 	formal_list : any_typ_not_void . ID  (29)
 
-	ID  shift 110
-	.  error
-
-
-state 102
-	func : any_typ ID LPAREN formals_opt . RPAREN LBRACE stmts RBRACE  (25)
-
-	RPAREN  shift 111
+	ID  shift 111
 	.  error
 
 
 state 103
-	formals_opt : formal_list .  (28)
-	formal_list : formal_list . COMMA any_typ ID  (30)
+	func : any_typ ID LPAREN formals_opt . RPAREN LBRACE stmts RBRACE  (25)
 
-	COMMA  shift 112
-	RPAREN  reduce 28
-
-
-state 104
-	struct_decl : ID LBRACE vdecl_list RBRACE . SEMI  (26)
-
-	SEMI  shift 113
+	RPAREN  shift 112
 	.  error
 
 
-state 105
-	vdecl : any_typ_not_void . ID SEMI  (24)
+state 104
+	formals_opt : formal_list .  (28)
+	formal_list : formal_list . COMMA any_typ ID  (30)
 
-	ID  shift 114
+	COMMA  shift 113
+	RPAREN  reduce 28
+
+
+state 105
+	struct_decl : ID LBRACE vdecl_list RBRACE . SEMI  (26)
+
+	SEMI  shift 114
 	.  error
 
 
 state 106
+	vdecl : any_typ_not_void . ID SEMI  (24)
+
+	ID  shift 115
+	.  error
+
+
+state 107
 	vdecl_list : vdecl_list vdecl .  (23)
 
 	.  reduce 23
 
 
-state 107
+state 108
 	expr : expr . PLUS expr  (37)
 	expr : expr . MINUS expr  (38)
 	expr : expr . TIMES expr  (39)
@@ -1980,7 +1975,7 @@ state 107
 	COMMA  reduce 60
 
 
-state 108
+state 109
 	stmt : IF LPAREN expr RPAREN stmt ELSE . stmt  (9)
 
 	LPAREN  shift 5
@@ -2002,11 +1997,11 @@ state 108
 	ID  shift 21
 	.  error
 
-	stmt  goto 115
+	stmt  goto 116
 	expr  goto 24
 
 
-state 109
+state 110
 	stmt : FOR LPAREN expr_opt SEMI expr SEMI . expr_opt RPAREN stmt  (10)
 	expr_opt : .  (14)
 
@@ -2024,23 +2019,23 @@ state 109
 	RPAREN  reduce 14
 
 	expr  goto 67
-	expr_opt  goto 116
+	expr_opt  goto 117
 
 
-state 110
+state 111
 	formal_list : any_typ_not_void ID .  (29)
 
 	.  reduce 29
 
 
-state 111
+state 112
 	func : any_typ ID LPAREN formals_opt RPAREN . LBRACE stmts RBRACE  (25)
 
-	LBRACE  shift 117
+	LBRACE  shift 118
 	.  error
 
 
-state 112
+state 113
 	formal_list : formal_list COMMA . any_typ ID  (30)
 
 	INT  shift 35
@@ -2051,58 +2046,58 @@ state 112
 	.  error
 
 	any_typ_not_void  goto 41
-	any_typ  goto 118
+	any_typ  goto 119
 
 
-state 113
+state 114
 	struct_decl : ID LBRACE vdecl_list RBRACE SEMI .  (26)
 
 	.  reduce 26
 
 
-state 114
+state 115
 	vdecl : any_typ_not_void ID . SEMI  (24)
 
-	SEMI  shift 119
+	SEMI  shift 120
 	.  error
 
 
-state 115
+state 116
 	stmt : IF LPAREN expr RPAREN stmt ELSE stmt .  (9)
 
 	.  reduce 9
 
 
-state 116
+state 117
 	stmt : FOR LPAREN expr_opt SEMI expr SEMI expr_opt . RPAREN stmt  (10)
 
-	RPAREN  shift 120
+	RPAREN  shift 121
 	.  error
 
 
-state 117
+state 118
 	func : any_typ ID LPAREN formals_opt RPAREN LBRACE . stmts RBRACE  (25)
 	stmts : .  (2)
 
 	.  reduce 2
 
-	stmts  goto 121
-
-
-state 118
-	formal_list : formal_list COMMA any_typ . ID  (30)
-
-	ID  shift 122
-	.  error
+	stmts  goto 122
 
 
 state 119
+	formal_list : formal_list COMMA any_typ . ID  (30)
+
+	ID  shift 123
+	.  error
+
+
+state 120
 	vdecl : any_typ_not_void ID SEMI .  (24)
 
 	.  reduce 24
 
 
-state 120
+state 121
 	stmt : FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN . stmt  (10)
 
 	LPAREN  shift 5
@@ -2124,17 +2119,17 @@ state 120
 	ID  shift 21
 	.  error
 
-	stmt  goto 123
+	stmt  goto 124
 	expr  goto 24
 
 
-state 121
+state 122
 	stmts : stmts . stmt  (3)
 	func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts . RBRACE  (25)
 
 	LPAREN  shift 5
 	LBRACE  shift 6
-	RBRACE  shift 124
+	RBRACE  shift 125
 	MINUS  shift 7
 	NOT  shift 8
 	TRUE  shift 9
@@ -2156,23 +2151,23 @@ state 121
 	expr  goto 24
 
 
-state 122
+state 123
 	formal_list : formal_list COMMA any_typ ID .  (30)
 
 	.  reduce 30
 
 
-state 123
+state 124
 	stmt : FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt .  (10)
 
 	.  reduce 10
 
 
-state 124
+state 125
 	func : any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE .  (25)
 
 	.  reduce 25
 
 
 48 terminals, 17 nonterminals
-62 grammar rules, 125 states
+62 grammar rules, 126 states

@@ -1,6 +1,8 @@
 (* semantically checked AST.
 semant.ml takes AST and produces SAST while checking semantics 
 *)
+type bind = Ast.typ * string
+
 
 type expr_det =
     IntLit of int
@@ -18,8 +20,8 @@ type expr_det =
   
   and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
 
-type vdecl_t = 
-  Vdecl of Ast.typ * string
+(* type vdecl_t = 
+  Vdecl of Ast.typ * string *)
 
 type stmt_t =
     Block of stmt_t list
@@ -41,7 +43,7 @@ type stmt_t =
 
   and strc_t = {
     sname : string;
-    vdecls : vdecl_t list;
+    vdecls : bind list;
 (*     funcs : func_t list;
  *)}
 

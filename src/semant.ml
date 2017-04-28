@@ -7,8 +7,9 @@ module StringMap = Map.Make(String)
 
 let built_in = [("print", A.String, A.Int)]
 
-let global_env = { funcs = [] }
-
+let global_env = { funcs = [] } 
+(* let global_structs = { structs = [] }
+ *)
 (* let struct_list = { structs = [] }
  *)
 (* this is the hash table used to store structs *)
@@ -30,16 +31,6 @@ let report_duplicate exceptf list =
       | _ :: t -> helper t
       | [] -> ()
     in helper (List.sort compare list)
-
-(* let check_struct_duplicate vdecl_list = 
-      let in_map = 
-        let x_map map a = 
-          match a with
-          Vdecl (t, n) ->
-            StringMap.add n t map
-          | _ -> raise (Failure ("should not assign value in struct"))
-        in
-        List.fold_left x_map StringMap.empty s.s_stmt_list *)
 
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
@@ -66,6 +57,13 @@ let find_func name = try
 
 let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
+
+(* let exist_struct name = try
+  List.find (fun s -> s.sname = name) global_structs.structs; true with Not_found -> false *)
+let check_valid_struct s =
+  try Hashtbl.find structs_hash s
+  with | Not_found -> raise (Exceptions.InvalidStruct s)
+
 
 
 (*check_expr: core type-matching function that recursively annotates type of each expr. *)
@@ -222,39 +220,27 @@ let rec check_stmt env  = function
 
   (* struct stmt *)
   | Ast.Struc(strc) ->
-
-  ignore (List.map (fun n -> (report_duplicate(fun n -> "duplicate struct field " ^ n) (List.map (fun n -> snd n) n.A.vdecls) )) strc);
-
-
-
-(*     ignore (report_duplicate (fun n -> "duplicate struct field " ^ n) List.map (fun strc -> snd strc) strc.vdecls);
- *)
-(*     ignore(List.map (fun n -> check_struct_duplicate strc.A.vdecls) strc);
-
- *)
-
-(* this function searches through the struct for duplicates*)
-(* n = the struct *)
-(* report_duplicate exception (List.map (fun n -> snd n) n.A.attributes)
- *)
-
-    Struc(strct)    
+    ignore(check_valid_struct strc.A.sname);      
+    let check_fields = report_duplicate (fun n -> "duplicate struct field " ^ n) (List.map (fun n -> snd n) strc.A.vdecls) in
+    let struct_sast = { sname = strc.sname; vdecls = strc.vdecls } in
+    Hashtbl.add structs_hash strc.A.sname strc;
+    Struc(struct_sast) 
 
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
     let (e, typ) = check_expr env e in
     (if typ != Bool then raise (Failure ("If stmt does not support this type")));
-    If((e, typ), check_stmt env struct_name s1, check_stmt env struct_name s2)
+    If((e, typ), check_stmt env s1, check_stmt env s2)
   | Ast.While(e, s) ->
     let (e, typ) = check_expr env e in
     (if typ != A.Bool then raise (Failure ("While stmt does not support this type")));
-    While((e, typ), check_stmt env struct_name s)
+    While((e, typ), check_stmt env s)
   | Ast.For(e1, e2, e3, s) -> 
     let (e1, typ1) = check_expr env e1 (*need to have empty expr *)
     and (e2, typ2) = check_expr env e2
     and (e3, typ3) = check_expr env e3 in
     (if typ2 != Bool then raise(Failure("For stmt does not support this type")));
-    For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env struct_name s)
+    For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
   | _ -> raise(Failure("unchecked stmts"))
 
 (* environment is a record with scope and return type. 

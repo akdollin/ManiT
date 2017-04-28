@@ -57,7 +57,7 @@ stmt:
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | DEF func { Func($2) }
-  | STRUCT struct_decl { Struct($2) }
+  | STRUCT struct_decl { Struc($2) }
 
 expr_opt: 
     /* nothing */ { Noexpr }
