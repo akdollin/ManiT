@@ -1,4 +1,4 @@
-var foo() {
+def void foo() {
 	print("OK");
 }
 
