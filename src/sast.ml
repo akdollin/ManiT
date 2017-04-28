@@ -14,7 +14,7 @@ type expr_det =
   | Unop of Ast.uop * expr_t
   | Call of string * expr_t list
   | Assign of string * expr_t
-  | Struct_create of string
+  | Struct_create of string * string
   | Struct_access of string * string * int * Ast.typ
   (* add array access here *)
   

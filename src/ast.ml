@@ -28,7 +28,7 @@ type expr =
   | Noexpr (* ERROR? is Noexpr ok? *) 
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
   | Struct_make of string * string
-  | Struct_access of expr * expr
+  | Struct_access of string * expr
 
 (* type vdecl =
     Vdecl of typ * string

@@ -160,6 +160,12 @@ let rec check_expr (env : environment) = function
     in match_types func.formals typed_actuals;
     Call(name, typed_actuals), func.typ (* return name and f_typ from fdecl *)
 
+  | Ast.Struct_make(struct_name, name) ->
+    try let name = find_var env.scope name in
+    raise(Failure("cannot create struct with same name as an existing variable"))
+    with Not_found -> Struct_make(struct_name, name)
+
+
   (* Need table access here. *)
 (* gets return types from checked stmts with typed expressions *)
 let rec get_return_types typ_list stmt = match stmt with
