@@ -7,38 +7,18 @@ module StringMap = Map.Make(String)
 
 let built_in = [("print", A.String, A.Int)]
 
-let global_env = { funcs = [] } 
-(* let global_structs = { structs = [] }
- *)
-(* let struct_list = { structs = [] }
- *)
-(* this is the hash table used to store structs *)
+let global_env = { funcs = [] }
+
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
 let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10
-
-(* Only call on struct or eventually array access *)
-let rec string_id_expr expr = 
-  match expr with
-    A.Id(s) -> s
-  | A.Struct_access(e1, _) -> string_id_expr e1 
-  | A.Call(s,_) -> s
-  | _ -> raise (Exceptions.ErrCatch "string_id_expr")
-
-(* Helper function to check for dups in a list *)
-let report_duplicate exceptf list =
-    let rec helper = function
-        n1 :: n2 :: _ when n1 = n2 -> raise (Failure (exceptf n1))
-      | _ :: t -> helper t
-      | [] -> ()
-    in helper (List.sort compare list)
-
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
       t1, t2 when t1 = t2 -> true
       (* add tables *)
     | _ -> false
-    (* let is_assignable t1 t2 = if t1 = t2 then true else false *)
+(* let is_assignable t1 t2 = if t1 = t2 then true else false *)
 
+(* finds var in scope *)
 let rec find_var scope name = try
   (*List.find ('a -> bool) -> a' list
     finds first element in a' list that satisfies predicate (a' -> bool) *)
@@ -58,13 +38,20 @@ let find_func name = try
 let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
 
-(* let exist_struct name = try
+
+(* Helper function to check for dups in a list *)
+let report_duplicate exceptf list =
+    let rec helper = function
+        n1 :: n2 :: _ when n1 = n2 -> raise (Failure (exceptf n1))
+      | _ :: t -> helper t
+      | [] -> ()
+    in helper (List.sort compare list)
+
+    (* let exist_struct name = try
   List.find (fun s -> s.sname = name) global_structs.structs; true with Not_found -> false *)
 let check_valid_struct s =
   try Hashtbl.find structs_hash s
   with | Not_found -> raise (Exceptions.InvalidStruct s)
-
-
 
 (*check_expr: core type-matching function that recursively annotates type of each expr. *)
 let rec check_expr (env : environment) = function
@@ -76,7 +63,7 @@ let rec check_expr (env : environment) = function
 
   (* Variable access *)
   | Ast.Id(name) -> let (name, typ) = try find_var env.scope name with 
-      Not_found -> raise (Failure("undeclared identifier " ^ name)) in 
+      Not_found -> raise (Failure("undeclared identifier !!!!" ^ name)) in 
       Id(name), typ
   
   (* Assignment(string, expr)
@@ -148,15 +135,15 @@ let rec check_expr (env : environment) = function
           Unop(uop, (e, typ)), typ
       | _ -> raise(Failure("unop error"))
       )
-(*   | Ast.Struct_make(s) -> 
-    let tmp_s = try check_struct s with Not_found -> 
-    raise (Exceptions.InvalidStruct s); *)
-
+  
   (* Function Call *)
   | Ast.Call(name, actuals) ->
     (* check types to each actuals and get types of formals from fdecl. *)
     let typed_actuals = List.map (fun e -> (check_expr env e)) actuals in
-    let func = try find_func name with Not_found -> 
+    match name with
+    | "print" -> Call("print", typed_actuals), A.Int
+    | _ ->
+    let func = try find_func name with Not_found ->
       raise(Failure("undefined function was called.")) in
 
     let match_types formals actuals = match formals, actuals with
@@ -185,7 +172,8 @@ let check_return_types func_typ func_body =
   List.iter (fun each_ret_typ -> (if (each_ret_typ != func_typ) 
   then raise(Failure("return types in fbody do not match with fdecl"))); ) ret_typs
 
-let rec check_stmt env  = function
+(* check_stmt *)
+let rec check_stmt env = function
   Ast.Block(stmtlist) ->
     (* sets a new scope to scope passed in *)
     let new_scope = { parent = Some(env.scope); variables = [] } in
@@ -201,8 +189,8 @@ let rec check_stmt env  = function
   
   (* Func.
   checks env. checks if all return types match with fdecl. adds fdecl to env. *)
-  | Ast.Func(func) ->   
-  (* add fdecl to global env if it hasn't declared previously. *)
+  | Ast.Func(func) ->
+    (* add fdecl to global env if it hasn't declared previously. *)
     ( match exist_func func.fname with 
       false ->
         (* make new scope and env with formals *)
@@ -217,30 +205,28 @@ let rec check_stmt env  = function
         check_return_types func.typ sast_fbody;
         Func(sast_func)
     | true -> raise(Failure("cannot redeclare function with same name")); )
-
   (* struct stmt *)
   | Ast.Struc(strc) ->
     ignore(check_valid_struct strc.A.sname);      
     let check_fields = report_duplicate (fun n -> "duplicate struct field " ^ n) (List.map (fun n -> snd n) strc.A.vdecls) in
     let struct_sast = { sname = strc.sname; vdecls = strc.vdecls } in
     Hashtbl.add structs_hash strc.A.sname strc;
-    Struc(struct_sast) 
-
+    Struc(struct_sast)
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
-    let (e, typ) = check_expr env e in
-    (if typ != Bool then raise (Failure ("If stmt does not support this type")));
-    If((e, typ), check_stmt env s1, check_stmt env s2)
+      let (e, typ) = check_expr env e in
+      (if typ != Bool then raise (Failure ("If stmt does not support this type")));
+      If((e, typ), check_stmt env s1, check_stmt env s2)
   | Ast.While(e, s) ->
-    let (e, typ) = check_expr env e in
-    (if typ != A.Bool then raise (Failure ("While stmt does not support this type")));
-    While((e, typ), check_stmt env s)
+      let (e, typ) = check_expr env e in
+      (if typ != A.Bool then raise (Failure ("While stmt does not support this type")));
+      While((e, typ), check_stmt env s)
   | Ast.For(e1, e2, e3, s) -> 
-    let (e1, typ1) = check_expr env e1 (*need to have empty expr *)
-    and (e2, typ2) = check_expr env e2
-    and (e3, typ3) = check_expr env e3 in
-    (if typ2 != Bool then raise(Failure("For stmt does not support this type")));
-    For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
+      let (e1, typ1) = check_expr env e1 (*need to have empty expr *)
+      and (e2, typ2) = check_expr env e2
+      and (e3, typ3) = check_expr env e3 in
+      (if typ2 != Bool then raise(Failure("For stmt does not support this type")));
+      For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
   | _ -> raise(Failure("unchecked stmts"))
 
 (* environment is a record with scope and return type. 
@@ -261,4 +247,3 @@ out: same triple in SAST types, semantically checked.
 let check_program program =
   let env = init_env in
   List.map (fun stmt -> check_stmt env stmt) program
-

@@ -14,59 +14,63 @@ type mutables = {
 };;
 *)
 
+
 let translate (stmts) =
+
   let context = L.global_context () in
   let the_module = L.create_module context "ManiT"
 
   (* and i64_t  = L.i64_type  context *)
-  and f32_t  = L.float_type context
+  and f32_t  = L.double_type context
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
-  and void_t = L.void_type context  (* void? *) in
-  let str_t = L.pointer_type i8_t in
-
-  let struct_types:(string, L.lltype) Hashtbl.t = Hashtbl.create 10 in
-  (* Helper function that returns L.lltype for a struct. 
-  This should never fail as semantic checker should catch invalid structs *)
-
+  and void_t = L.void_type context in (* void? *)
+  
+  let string_t = L.pointer_type i8_t
+  and i8ptr_t = L.pointer_type i8_t
+  in
+  
   (* Declare printf(), which the print built-in function will call *)
   let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func = L.declare_function "printf" printf_t the_module in
 
-  let find_struct_name name =
-    try Hashtbl.find struct_types name
-    with | Not_found -> raise(Exceptions.InvalidStruct name) in
-
-  (* Code to declare struct *)
-  let declare_struct s =
-    let struct_t = L.named_struct_type context s.S.sname in
-    Hashtbl.add struct_types s.S.sname struct_t in
-
   let ltype_of_typ = function
       A.Int -> i32_t
     | A.Float -> f32_t
-    | A.String -> i8_t (* ptr? *)
+    | A.String -> string_t (* ptr? *)
     | A.Bool -> i1_t
     | A.Void -> void_t  (* need void? see return types *)  
-    | _ -> i32_t (* placed due to error. add string *) in 
+    | _ -> i32_t (* placed due to error. add string *) in
+
+  (* init value for each type
+  let init_val = function
+      A.Int -> 0
+    | A.Float -> 0.0
+    | A.Bool -> false
+    | A.String -> "TEST: codegen init_val"
+    | _ -> 777 (*for error checking *) in
+  *)  
   
-(*   (* Function that builds LLVM struct for one struct *)
-  let define_struct_body s =
-    let struct_t = try Hashtbl.find struct_types s.S.sname with | Not_found -> raise (Exceptions.BugCatch "defin_struct") in
-  
-    let vdecl_types = List.map (fun vdecl -> t) s.S.vdecls in
-    let vdecls = List.map ltype_of_typ vdecl_types in   
-    let vdecl_array = Array.of_list vdecls in 
-    L.struct_set_body struct_t vdecl_array false in *)
+  (*
+  let lvalue_of_lit e t =
+      let ltype = ltype_of_typ t in
+      match t with
+        A.Int -> L.const_int ltype e
+      | A.Float -> L.const_float ltype 0.0
+      | A.Bool -> L.const_int ltype e
+      | A.String -> L.const_pointer_null i8_t
+      | _ -> L.const_int ltype 777 (* for errors *) in
+    *)
+
 
   let init_llvalue id t =
     let ltype = ltype_of_typ t in
     match t with 
       A.Int | A.Bool -> L.const_int ltype 0
     | A.Float -> L.const_float ltype 0.0
-    | A.String -> L.const_pointer_null i8_t
-    | _ -> L.const_int ltype 777 (* for errors *) in 
+    | A.String -> L.const_pointer_null string_t
+    | _ -> L.const_int ltype 777 (* for errors *) in
 
   (* alloc globals *)
   let globals = 
@@ -141,7 +145,7 @@ let translate (stmts) =
     (* formals *)
     let formals = 
       let add_formal m (t, id) param = L.set_value_name id param;
-	(* allocate the formal and store param *)
+  (* allocate the formal and store param *)
         let formal = L.build_alloca (ltype_of_typ t) id builder in
       ignore (L.build_store param formal builder);
       StringMap.add id formal m in
@@ -150,27 +154,38 @@ let translate (stmts) =
       (Array.to_list (L.params the_function)) in
 
     (* add locals to formals *)
+    (* not in main => local *)
+    (* in main but in block => local *)
+    (* in main but not in block => global *)
     let locals =
-      let rec f1 m e = match e with
-        S.Assign (id, right_e), t ->
-          let m = f1 m right_e in
-          let local_var  = L.build_alloca (ltype_of_typ t) id builder in
-        StringMap.add id local_var m
-        | _ -> m
+      (* whether current scope is in a block. *)
+      let rec build_local_e in_block map expr = 
+        if in_block == true then match expr with
+          S.Assign (id, right_e), typ ->
+            let map =  build_local_e true map right_e in
+            let local_var  = L.build_alloca (ltype_of_typ typ) id builder in
+            StringMap.add id local_var map
+          | _ -> map (* non asn stmt should not declare new vars *)
+        else map (* if not in a block, global was created already. *)
       in
-      let rec f2 m stmt = match stmt with
-          S.Block sl -> f2 m stmt
-        | S.Return e -> f1 m e
-        | S.Expr e -> ( match fdecl.S.fname with 
-            (* dont create locals for expr stmts in main b/c they are globals *)
-            "main" -> m 
-            | _    -> f1 m e )
-        | S.If (p, t, e) -> List.fold_left f2 m [t; e]
-        | S.While (p, b)-> f2 m stmt
-        | S.For (e1, e2, e3, b) -> List.fold_left f1 m [e1; e2; e3]
-        | _ -> m
+      (* add locals in stmts *)
+      let rec build_local_s in_block map stmt = match stmt with
+          S.Block stmt_list -> List.fold_left (fun map stmt -> build_local_s true map stmt) map stmt_list
+        | S.If (pred, then_s, else_s) -> List.fold_left (fun map stmt -> build_local_s true map stmt) map [then_s; else_s]
+        | S.While (pred, block) -> build_local_s true map block (* var declared in predicate ok? *)
+        | S.For (e1, e2, e3, block) -> 
+            let map = List.fold_left (fun map expr -> build_local_e true map expr) map [e1; e2; e3] in
+            build_local_s true map block
+        | S.Return expr -> build_local_e in_block map expr (* in_block follows that of parent *)
+        | S.Expr expr -> build_local_e in_block map expr
+        | _ -> map
       in
-    List.fold_left f2 formals fdecl.S.body in
+      let find_in_block = function
+          "main" -> false
+        | _ -> true
+      in
+      let in_block = find_in_block fdecl.S.fname in
+      List.fold_left (fun map stmt -> build_local_s in_block map stmt) formals fdecl.S.body in
 
     (*
     (* helper: allocates a new local (and global?) depending on fdecl. *)
@@ -213,7 +228,7 @@ let translate (stmts) =
       | S.FloatLit f, t -> L.const_float f32_t f
       (*| A.DoubleLit d, t -> L.const_double i64_t d *)
       | S.BoolLit b, t -> L.const_int i1_t (if b then 1 else 0)
-      | S.StringLit s, t -> L.build_global_string s "" builder
+      | S.StringLit s, t -> L.build_global_stringptr s "" builder
       (* | A.Noexpr -> L.const_int i32_t 0 *)
       | S.Id s, t -> L.build_load (lookup s) s builder (* R.H.S lookup *)
       | S.Binop (e1, op, e2), t ->
@@ -242,9 +257,25 @@ let translate (stmts) =
         (* lookup id, store e` in s. stack alloced already. *)
         let e' = build_expr builder e in
           ignore (L.build_store e' (lookup id) builder); e'
-      | S.Call ("print", [e]), t | S.Call ("printb", [e]), t -> (* check the type, if float fomrat str, etc*)
-          L.build_call printf_func [| int_format_str ; (build_expr builder e) |]
-            "printf" builder
+      | S.Call ("print", [(e, expr_t)]), t ->
+      (*let t = (* find the type of it *) in*)
+        let var = build_expr builder (e,expr_t) in
+        (match expr_t with
+        | A.Int ->
+            L.build_call printf_func [| int_format_str ; (var) |]
+        | A.Float ->
+            L.build_call printf_func [| float_format_str ; (var) |]
+        | A.Bool ->
+                (*
+            let tr = L.build_global_stringptr "true" "" builder in
+            let fa = L.build_global_stringptr "false" "" builder in
+            if (L.is_null var) then L.build_call printf_func [| string_format_str ; (fa) |]
+            else L.build_call printf_func [| string_format_str ; (tr) |] *)
+            L.build_call printf_func [| int_format_str ; (var) |]
+        | A.String ->
+            L.build_call printf_func [| string_format_str ; (var) |]
+        | A.Void ->
+            L.build_call printf_func [| string_format_str ; (L.build_global_stringptr "" "" builder) |]) "printf" builder
       | S.Call (f, act), t ->
          let (fdef, fdecl) = StringMap.find f prototypes in
          let actuals = List.rev (List.map (build_expr builder) (List.rev act)) in
@@ -309,7 +340,6 @@ let translate (stmts) =
         A.Fdecl fdecl -> ignore(build_function fdecl) (* recursion *) 
       | _ -> ignore(build_stmt builder stmt)
     in
-
     (* Build the code for each stmt in the function body *)
     let _ = List.iter (fun _stmt -> build builder _stmt) fdecl.A.body in
     *)
