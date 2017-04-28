@@ -113,7 +113,7 @@ expr:
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
   | GLOBAL ID ASSIGN expr { GlobalAsn($2, $4) } /* global asn */
-  | LBRACK actuals_list RBRACK {ArrayLit($2)}
+  | LBRACK literal_list RBRACK {ArrayLit($2)}
   | ID LBRACK expr RBRACK {Array_access($1, $3)}
 
 actuals_opt:
