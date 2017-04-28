@@ -38,6 +38,10 @@ let find_func name = try
 let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
 
+let check_duplicate_struct strct =
+(*     Hashtbl.find structs_hash strct; true with Not_found -> false
+ *)
+  try Hashtbl.find structs_hash strct; true with Not_found -> false
 
 (* Helper function to check for dups in a list *)
 let report_duplicate exceptf list =
@@ -207,11 +211,15 @@ let rec check_stmt env = function
     | true -> raise(Failure("cannot redeclare function with same name")); )
   (* struct stmt *)
   | Ast.Struc(strc) ->
-    ignore(check_valid_struct strc.A.sname);      
-    let check_fields = report_duplicate (fun n -> "duplicate struct field " ^ n) (List.map (fun n -> snd n) strc.A.vdecls) in
-    let struct_sast = { sname = strc.sname; vdecls = strc.vdecls } in
-    Hashtbl.add structs_hash strc.A.sname strc;
-    Struc(struct_sast)
+(*     ignore(check_duplicate_struct strc);  
+ *)    
+    (match check_duplicate_struct strc.A.sname with 
+      false -> 
+        let check_fields = report_duplicate (fun n -> "duplicate struct field " ^ n) (List.map (fun n -> snd n) strc.A.vdecls) in
+        let struct_sast = { sname = strc.sname; vdecls = strc.vdecls } in
+        Hashtbl.add structs_hash strc.A.sname strc;
+        Struc(struct_sast)
+    | true -> raise(Failure("cannot redeclare struct with same name")); )    
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
       let (e, typ) = check_expr env e in
