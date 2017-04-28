@@ -173,7 +173,7 @@ let rec check_expr (env : environment) = function
     in match_types func.formals typed_actuals;
     Call(name, typed_actuals), func.typ (* return name and f_typ from fdecl *)
 
-  (*| Ast.Struct_make(struct_name, name) ->
+  (*| Ast.Struct_make(struct_name, name) -> Struct_make(struct_name, name)
     try find_var env.scope name
     with Not_found -> Struct_make(struct_name, name)
     raise(Failure("cannot create struct with same name as an existing variable"))*)
@@ -240,14 +240,14 @@ let rec check_stmt env = function
         Struc(struct_sast)
     | true -> raise(Failure("cannot redeclare struct with same name"));) 
   | Ast.Vdecl(typ, name) -> (match typ with 
-    Struct_typ(typString) -> 
-      (match find_var env.scope name;
+    Struct_typ(typString) ->
+    (try find_var env.scope name;
         raise(Failure("Cannot set struct to existing variable name!")) with 
         Not_found -> 
           (match check_duplicate_struct typString with 
             true -> 
               Vdecl((typ,name))
-          | false -> raise(Failure("Struct not declared!"));)) 
+          | false -> raise(Failure("Struct not declared!"));))
     | _ -> raise(Failure("ManiT is type inferred, you dun messed up!")))
   (* conditionals *)
   | Ast.If(e, s1, s2) ->

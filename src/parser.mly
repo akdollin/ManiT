@@ -58,6 +58,7 @@ stmt:
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   | DEF func { Func($2) }
   | STRUCT struct_decl { Struc($2) }
+  | vdecl { Vdecl($1) }
 
 expr_opt: 
     /* nothing */ { Noexpr }
@@ -124,8 +125,8 @@ expr:
   | expr GEQ    expr { Binop($1, Geq,   $3) }
   | expr AND    expr { Binop($1, And,   $3) }
   | expr OR     expr { Binop($1, Or,    $3) }
-  | ID   DOT    expr { Struct_access($1, $3)}
-  | STRUCT ID ID       { Struct_make($2, $3)}
+  /*| ID   DOT    expr { Struct_access($1, $3)}
+  | STRUCT ID ID       { Struct_make($2, $3)}*/
   | MINUS expr %prec NEG { Unop(Neg, $2) } 
   | NOT expr         { Unop(Not, $2) }
   | ID ASSIGN expr   { Assign($1, $3) }

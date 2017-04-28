@@ -324,7 +324,7 @@ let translate (stmts) =
          let result = (match fdecl.S.typ with A.Void -> ""
                                             | _ -> f ^ "_result") in
          L.build_call fdef (Array.of_list actuals) result builder
-      | S.Struct_make (s) -< L.build.malloc (find_struct_name s) "tmp" builder
+      (*| S.Struct_make (s) -> L.build.malloc (find_struct_name s) "tmp" builder*)
     in
 
     (* Invoke "f builder" if the current block doesn't already

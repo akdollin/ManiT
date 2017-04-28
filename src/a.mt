@@ -1,6 +1,6 @@
-struct Foo {
-  int x;
-  int y;
+struct test {
+	int tmp;	
 };
 
-struct Foo a;
+struct test a;
+
