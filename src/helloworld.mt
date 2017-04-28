@@ -1,42 +1,27 @@
-c = true;
-
-if (c)
-{
-  a = 1;
-}
-
-i = 0;
-
-for (i = 0; i < 3; i = i + 1)
-{
-  a = 1;
-}
-
-while (i == 0)
-{
-  a = 1;
-}
-
 d = 4;
+/* comment */
 
-def int foo(int b)
+def int foo(int a)
 {
-  b + 3;
+  return a;
 }
 
-foo(d);
+print(foo(4));
 
-f = 1.333;
-s = "hello world";
-b = true;
-boolf = false;
+def void bar(int b)
+{
+	i = 0;
+	for (i = 0; i < b; i = i + 1)
+	{
+		print(i);
+	}
+}
 
-print(d);
-print(f);
-print(s);
-print(b);
-print(boolf);
+bar(4);
 
-struct tmp {
-	int tmp1;
-};
+def void test(int a)
+{
+	print("hello");
+}
+
+test(4);

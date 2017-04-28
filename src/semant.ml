@@ -150,20 +150,33 @@ let rec check_expr (env : environment) = function
     let func = try find_func name with Not_found ->
       raise(Failure("undefined function was called.")) in
 
+    let match_arg_num formals actuals =
+        if (List.length formals <> List.length actuals) then
+        raise(Failure("number of actuals and formals do not match"))
+    in
+
     let match_types formals actuals = match formals, actuals with
+    (*
         [], _ -> raise(Failure("number of actuals and formals do not match"))
       | _, [] -> raise(Failure("number of actuals and formals do not match"))
+    *)
       | (ftyp, _) :: _, ( _ , atyp) :: _ ->
-        if not(is_assignable ftyp atyp) then raise(Failure("typ of actuals do not match those of formals")); ()
+        if not(is_assignable ftyp atyp) then raise(Failure("typ of actuals do not match those of formals"));
+        if not(List.length formals = List.length actuals) then
+        raise(Failure("number of actuals and formals do not match")); ()
+      | _, _ -> if not(List.length formals = List.length actuals) then
+                raise(Failure("number of actuals and formals do not match"))
+      (*
       | _, _ -> raise(Failure("matching types failed"))
+      *)
     
     in match_types func.formals typed_actuals;
     Call(name, typed_actuals), func.typ (* return name and f_typ from fdecl *)
 
-  | Ast.Struct_make(struct_name, name) ->
-    try let name = find_var env.scope name in
-    raise(Failure("cannot create struct with same name as an existing variable"))
+  (*| Ast.Struct_make(struct_name, name) ->
+    try find_var env.scope name
     with Not_found -> Struct_make(struct_name, name)
+    raise(Failure("cannot create struct with same name as an existing variable"))*)
 
 
   (* Need table access here. *)
