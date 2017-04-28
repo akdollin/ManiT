@@ -1,0 +1,13 @@
+print("Hello");
+print(2);
+print(2.2);
+print(true);
+print(false);
+a = 2;
+b = 2.2;
+c = true;
+d = false;
+print(a);
+print(b);
+print(c);
+print(d);

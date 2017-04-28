@@ -1,9 +1,11 @@
-var a = 4;
-var b = "Hello";
-var c = 4.1;
-var d = true;
+i = 1;
+f = 1.11;
+s = "String Test";
+bt = true;
+bf = false;
 
-var e = a + 2;
-var f = b + "hi";
-var g = c + 1.0;
-var h = !d;
+print(i);
+print(f);
+print(s);
+print(bt);
+print(bf);
