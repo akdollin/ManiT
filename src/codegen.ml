@@ -35,12 +35,13 @@ let translate (stmts) =
   let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   let printf_func = L.declare_function "printf" printf_t the_module in
 
-  let ltype_of_typ = function
+  let _ltype_of_typ m = function
       A.Int -> i32_t
     | A.Float -> f32_t
     | A.String -> string_t (* ptr? *)
     | A.Bool -> i1_t
-    | A.Void -> void_t  (* need void? see return types *)  
+    | A.Void -> void_t  (* need void? see return types *)
+    | A.Struct_typ(s) -> StringMap.find s m
     | _ -> i32_t (* placed due to error. add string *) in
 
   (* init value for each type
@@ -63,6 +64,58 @@ let translate (stmts) =
       | _ -> L.const_int ltype 777 (* for errors *) in
     *)
 
+  (* split fdecls and stmts. store stmts in main's body *)
+  let (fdecls, sdecls, main_body) = 
+    let split (fdecls, sdecls, main_body) stmt = match stmt with (* why func_decl_t?*) 
+      S.Func(fdecl) -> fdecls@[fdecl], sdecls, main_body
+    | S.Struc(sdecl) -> fdecls, sdecls@[sdecl], main_body
+    | _ -> fdecls, sdecls, main_body@[stmt]
+    and init = ([],[],[]) in
+  List.fold_left split init stmts in 
+  
+  (* main_func *)
+  let main_func = {
+    S.fname = "main";
+    S.typ = A.Int;
+    S.formals = [];
+    S.body = main_body
+  } in
+
+  (* functions *)
+  let functions = [main_func]@fdecls in
+  let structs = sdecls in
+
+  
+  (* restructured code.
+    let build_proto2 m stmt = match stmt with
+      A.Fdecl fdecl -> build_proto1 m fdecl
+      | _ -> m
+    in
+  List.fold_left build_proto2 StringMap.empty stmts in 
+  *)
+
+  let struct_ltypes =
+      let struct_ltype m st =
+          let decls_array = Array.of_list ( List.rev ( List.fold_left 
+              (fun l (t,_) -> (_ltype_of_typ m t)::l) [] st.S.vdecls) )
+      in let named_struct = L.named_struct_type context st.S.sname
+      in L.struct_set_body named_struct decls_array false ;
+      StringMap.add st.S.sname named_struct m in
+      List.fold_left struct_ltype StringMap.empty structs
+  in
+
+  let ltype_of_typ t = _ltype_of_typ struct_ltypes t in
+
+  (* build prototypes *)
+  let prototypes =  
+    let build_proto1 m fdecl =
+      let name = fdecl.S.fname
+      and formal_types = 
+      Array.of_list (List.map (fun (t, _) -> ltype_of_typ t) fdecl.S.formals) in 
+        let ftype = L.function_type (ltype_of_typ fdecl.S.typ) formal_types in
+    StringMap.add name (L.define_function name ftype the_module, fdecl) m in
+  List.fold_left build_proto1 StringMap.empty functions in
+
 
   let init_llvalue id t =
     let ltype = ltype_of_typ t in
@@ -71,6 +124,8 @@ let translate (stmts) =
     | A.Float -> L.const_float ltype 0.0
     | A.String -> L.const_pointer_null string_t
     | _ -> L.const_int ltype 777 (* for errors *) in
+
+
 
   (* alloc globals *)
   let globals = 
@@ -93,44 +148,7 @@ let translate (stmts) =
     in
   List.fold_left build_global2 StringMap.empty stmts in
 
-  (* split fdecls and stmts. store stmts in main's body *)
-  let (fdecls, main_body) = 
-    let split (fdecls, main_body) stmt = match stmt with (* why func_decl_t?*) 
-      S.Func fdecl -> fdecls@[fdecl], main_body
-    | _ -> fdecls, main_body@[stmt]
-    and init = ([],[]) in
-  List.fold_left split init stmts in 
   
-  (* main_func *)
-  let main_func = {
-    S.fname = "main";
-    S.typ = A.Int;
-    S.formals = [];
-    S.body = main_body
-  } in
-
-  (* functions *)
-  let functions = [main_func]@fdecls in
-
-  (* build prototypes *)
-  let prototypes =  
-    let build_proto1 m fdecl =
-      let name = fdecl.S.fname
-      and formal_types = 
-      Array.of_list (List.map (fun (t, _) -> ltype_of_typ t) fdecl.S.formals) in 
-        let ftype = L.function_type (ltype_of_typ fdecl.S.typ) formal_types in
-    StringMap.add name (L.define_function name ftype the_module, fdecl) m in
-  List.fold_left build_proto1 StringMap.empty functions in
-  
-  (* restructured code.
-    let build_proto2 m stmt = match stmt with
-      A.Fdecl fdecl -> build_proto1 m fdecl
-      | _ -> m
-    in
-  List.fold_left build_proto2 StringMap.empty stmts in 
-  *)
-
-
   (* Fill in the body of the given function *)
   let rec build_function fdecl =
     (* search prototype and get builder *)

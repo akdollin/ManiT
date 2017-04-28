@@ -36,3 +36,7 @@ print(f);
 print(s);
 print(b);
 print(boolf);
+
+struct tmp {
+	int tmp1;
+};
