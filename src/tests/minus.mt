@@ -1,6 +1,6 @@
-var a = 4;
-var b = 3;
-var c = a - b;
+a = 4;
+b = 3;
+c = a - b;
 
 if( c == 1) {
 	print("OK");

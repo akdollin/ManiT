@@ -5,7 +5,6 @@ bt = true;
 bf = false;
 
 print(i);
-print(f);
 print(s);
 print(bt);
 print(bf);

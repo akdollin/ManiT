@@ -30,3 +30,6 @@ struct tmp {
 	int tmp1;
 	int tmp2;
 };
+
+a = (1 + 1) * 2;
+print(a);

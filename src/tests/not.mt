@@ -1,4 +1,4 @@
-var a = false;
+a = false;
 
 if(!a) {
 	print("OK");
