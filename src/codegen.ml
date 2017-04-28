@@ -94,6 +94,12 @@ let translate (stmts) =
   List.fold_left build_proto2 StringMap.empty stmts in 
   *)
 
+  let struct_hash:(string, L.lltype) Hashtbl.t = Hashtbl.create 10 in
+  
+  let make_struct strc =
+    let struct_t = L.named_struct_type context strc.S.sname in
+    Hashtbl.add struct_hash strc.S.sname struct_t in
+    
   let struct_ltypes =
       let struct_ltype m st =
           let decls_array = Array.of_list ( List.rev ( List.fold_left 
@@ -103,8 +109,23 @@ let translate (stmts) =
       StringMap.add st.S.sname named_struct m in
       List.fold_left struct_ltype StringMap.empty structs
   in
-
+  
   let ltype_of_typ t = _ltype_of_typ struct_ltypes t in
+
+  let make_struct_body strc =
+    let struct_t = try Hashtbl.find struct_hash strc.S.sname with 
+      | Not_found -> raise (Exceptions.BugCatch "struct not found in definition") in
+    let vdecl_types = List.map (fun (typ, _) -> typ) strc.S.vdecls in
+    let vdecls = List.map ltype_of_typ vdecl_types in
+    let vdecl_array = Array.of_list vdecls in
+    L.struct_set_body struct_t vdecl_array false in 
+    
+  let _ = List.iter make_struct structs in
+  let _ = List.iter make_struct_body structs in
+  
+  let find_struct_name name =
+    try Hashtbl.find struct_hash name
+    with | Not_found -> raise(Exceptions.InvalidStruct name) in
 
   (* build prototypes *)
   let prototypes =  
@@ -144,6 +165,9 @@ let translate (stmts) =
     (* iterate on expr stmts, skip other stmts *)
     let build_global2 m stmt = match stmt with 
         S.Expr e -> build_global1 m e
+      | S.Vdecl (typ, name) ->
+        let init = L.const_named_struct (find_struct_name name) [||] in 
+        (L.define_global name init the_module); m
       | _ -> m
     in
   List.fold_left build_global2 StringMap.empty stmts in
@@ -300,6 +324,7 @@ let translate (stmts) =
          let result = (match fdecl.S.typ with A.Void -> ""
                                             | _ -> f ^ "_result") in
          L.build_call fdef (Array.of_list actuals) result builder
+      | S.Struct_make (s) -< L.build.malloc (find_struct_name s) "tmp" builder
     in
 
     (* Invoke "f builder" if the current block doesn't already
@@ -313,7 +338,7 @@ let translate (stmts) =
     (* Build the code for the given statement; return the builder for
        the statement's successor *)
     let rec build_stmt builder = function
-        S.Block sl -> List.fold_left build_stmt builder sl
+      | S.Block sl -> List.fold_left build_stmt builder sl
       | S.Expr e -> ignore (build_expr builder e); builder
       | S.Return e -> ignore (match fdecl.S.typ with
           A.Void -> L.build_ret_void builder
@@ -350,6 +375,7 @@ let translate (stmts) =
 
       | S.For (e1, e2, e3, body) -> build_stmt builder
             ( S.Block [S.Expr e1 ; S.While (e2, S.Block [body ; S.Expr e3]) ] )
+
     in
 
     (* need to handle main separately to use this code.
