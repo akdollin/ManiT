@@ -32,6 +32,7 @@ type stmt_t =
   | While of expr_t * stmt_t
   | Func of func_t 
   | Struc of strc_t
+  | Vdecl of bind
 
   and 
   func_t = {

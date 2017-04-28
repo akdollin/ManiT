@@ -63,12 +63,16 @@ expr_opt:
     /* nothing */ { Noexpr }
   | expr          { $1 }
 
+struct_typ:
+  | STRUCT ID { $2 }
 
 any_typ_not_void:
   | STRING  { String }
   | FLOAT  { Float }
   | INT     { Int }
   | BOOL    { Bool }
+  | struct_typ    { Struct_typ($1) }
+
 
 any_typ:
   any_typ_not_void  { $1 }

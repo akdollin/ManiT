@@ -38,10 +38,10 @@ let find_func name = try
 let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
 
-let check_duplicate_struct strct =
+let check_duplicate_struct strctName =
 (*     Hashtbl.find structs_hash strct; true with Not_found -> false
  *)
-  try Hashtbl.find structs_hash strct; true with Not_found -> false
+  try Hashtbl.find structs_hash strctName; true with Not_found -> false
 
 (* Helper function to check for dups in a list *)
 let report_duplicate exceptf list =
@@ -238,7 +238,17 @@ let rec check_stmt env = function
         let struct_sast = { sname = strc.sname; vdecls = strc.vdecls } in
         Hashtbl.add structs_hash strc.A.sname strc;
         Struc(struct_sast)
-    | true -> raise(Failure("cannot redeclare struct with same name")); )    
+    | true -> raise(Failure("cannot redeclare struct with same name"));) 
+  | Ast.Vdecl(typ, name) -> (match typ with 
+    Struct_typ(typString) -> 
+      (match find_var env.scope name;
+        raise(Failure("Cannot set struct to existing variable name!")) with 
+        Not_found -> 
+          (match check_duplicate_struct typString with 
+            true -> 
+              Vdecl((typ,name))
+          | false -> raise(Failure("Struct not declared!"));)) 
+    | _ -> raise(Failure("ManiT is type inferred, you dun messed up!")))
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
       let (e, typ) = check_expr env e in

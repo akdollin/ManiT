@@ -43,6 +43,7 @@ type stmt =
   | While of expr * stmt
   | Func of func
   | Struc of strc
+  | Vdecl of bind
 
 and 
 func = {
