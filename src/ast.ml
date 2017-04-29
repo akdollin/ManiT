@@ -27,8 +27,10 @@ type expr =
   | Call of string * expr list (*fname and actuals*)
   | Noexpr (* ERROR? is Noexpr ok? *) 
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
-  | Struct_make of string * string
-  | Struct_access of string * expr
+  (* | Struct_make of string * string *)
+  | Struct_access of string * string
+  | Array_create of expr list
+  | Array_access of string * expr
 
 (* type vdecl =
     Vdecl of typ * string

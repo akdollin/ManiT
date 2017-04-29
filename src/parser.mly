@@ -56,6 +56,7 @@ stmt:
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt 
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
+  /* func and structs */
   | DEF func { Func($2) }
   | STRUCT struct_decl { Struc($2) }
   | vdecl { Vdecl($1) }
@@ -73,7 +74,6 @@ any_typ_not_void:
   | INT     { Int }
   | BOOL    { Bool }
   | struct_typ    { Struct_typ($1) }
-
 
 any_typ:
   any_typ_not_void  { $1 }
@@ -125,20 +125,23 @@ expr:
   | expr GEQ    expr { Binop($1, Geq,   $3) }
   | expr AND    expr { Binop($1, And,   $3) }
   | expr OR     expr { Binop($1, Or,    $3) }
-  /*| ID   DOT    expr { Struct_access($1, $3)}
-  | STRUCT ID ID       { Struct_make($2, $3)}*/
   | MINUS expr %prec NEG { Unop(Neg, $2) } 
   | NOT expr         { Unop(Not, $2) }
+  | LPAREN expr RPAREN { $2 }
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
-  | LPAREN expr RPAREN { $2 }
   | GLOBAL ID ASSIGN expr { GlobalAsn($2, $4) } /* global asn */
+  /* structs and arrays */
+  | ID DOT ID { Struct_access($1, $3) }
+  /* add struct fcall here */
+  | LBRACK expr_list RBRACK { Array_create($2) }
+  | ID LBRACK expr RBRACK { Array_access($1,$3) }
 
-actuals_opt:
+exprs_opt:
     /* nothing */ { [] }
-  | actuals_list  { List.rev $1 }
+  | exprs_list  { List.rev $1 }
 
-actuals_list:
+exprs_list:
     expr                    { [$1] }
-  | actuals_list COMMA expr { $3 :: $1 }
+  | exprs_list COMMA expr { $3 :: $1 }
 

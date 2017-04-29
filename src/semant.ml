@@ -10,13 +10,18 @@ let built_in = [("print", A.String, A.Int)]
 let global_env = { funcs = [] }
 
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
-let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10
+(* let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10 *)
+
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
       t1, t2 when t1 = t2 -> true
       (* add tables *)
     | _ -> false
 (* let is_assignable t1 t2 = if t1 = t2 then true else false *)
+
+let all_the_same = function
+    [] -> true
+  | lst -> let hd = (List.hd lst) in List.for_all ((=) hd) lst
 
 (* finds var in scope *)
 let rec find_var scope name = try
@@ -39,8 +44,7 @@ let exist_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
 
 let check_duplicate_struct strctName =
-(*     Hashtbl.find structs_hash strct; true with Not_found -> false
- *)
+(* Hashtbl.find structs_hash strct; true with Not_found -> false *)
   try Hashtbl.find structs_hash strctName; true with Not_found -> false
 
 (* Helper function to check for dups in a list *)
@@ -173,7 +177,39 @@ let rec check_expr (env : environment) = function
     in match_types func.formals typed_actuals;
     Call(name, typed_actuals), func.typ (* return name and f_typ from fdecl *)
 
-  (*| Ast.Struct_make(struct_name, name) -> Struct_make(struct_name, name)
+  | Struct_access(var, member) -> try
+      let (var, strc_name) = find_var scope sname in  (* find  instance of struct was declared in current scope *)
+      let strc = Hashtbl.find strcs_hash strc_name in (* find strc type definition *)
+      let (typ, _) = List.find strc.vdecls member in
+      Struct_Access(var, member), typ
+      with Not_found -> Raise(Failure("struct access semantics error")) 
+      (* need to handle each error separately for robustness *)
+  | Array_create(expr_list) ->
+      let length = List.length expr_list in
+      let checked_expr_list = List.map check_expr expr_list in
+      let typs = List.map (fun (_,typ) -> typ) checked_expr_list in
+      match all_the_same typs with
+        false -> raise(Failure("typs elements in array are not coherent"))
+      | true -> Array_create(checked_expr_list, length), List.hd typs
+  | Array_access(var, index_expr) -> 
+      (* find var first *)
+      try let (var, arr_typ) = find_var scope name with Not_found ->
+        raise(Failure("array variable not found")) in
+      (* need to check if arr typ *)
+      let (var_typ, length) = arr_typ in
+      (* check index expr *)
+      let (index_expr, index_expr_typ) = check_expr index_expr in
+      if typ != A.Int then raise(Failure("array access requires int arg")) 
+      (* need separate function to evaluate the expr.
+         we only allow int literal (not binop, unop) for now *)
+      else match index_expr with
+          A.IntLit(index) -> 
+            if index < 0 || index > length - 1 then raise(Failure("access out of bounds"))
+            else Array_access(var, index_expr), var_typ (* no need to return the value here! *)
+        | _ -> raise(Failure("array access: only int lit allowed for now"))
+
+  (*Struct decl is stmt 
+    | Ast.Struct_make(struct_name, name) -> Struct_make(struct_name, name)
     try find_var env.scope name
     with Not_found -> Struct_make(struct_name, name)
     raise(Failure("cannot create struct with same name as an existing variable"))*)

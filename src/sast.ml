@@ -3,7 +3,6 @@ semant.ml takes AST and produces SAST while checking semantics
 *)
 type bind = Ast.typ * string
 
-
 type expr_det =
     IntLit of int
   | FloatLit of float
@@ -14,9 +13,11 @@ type expr_det =
   | Unop of Ast.uop * expr_t
   | Call of string * expr_t list
   | Assign of string * expr_t
-  | Struct_create of string * string
-  | Struct_access of string * string * int * Ast.typ
-  (* add array access here *)
+  (* | Struct_create of string * string *)
+  (* | Struct_access of string * string * int * Ast.typ *)
+  | Struct_access of string * string
+  | Array_create of expr_t list * int
+  | Array_access of string * expr_t
   
   and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
 
@@ -45,8 +46,8 @@ type stmt_t =
   and strc_t = {
     sname : string;
     vdecls : bind list;
-(*     funcs : func_t list;
- *)}
+    (* funcs : func_t list; *)
+  }
 
 type symbol_table = {
   parent : symbol_table option;
