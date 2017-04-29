@@ -14,7 +14,6 @@ type mutables = {
 };;
 *)
 
-
 let translate (stmts) =
 
   let context = L.global_context () in
@@ -41,7 +40,7 @@ let translate (stmts) =
     | A.String -> string_t (* ptr? *)
     | A.Bool -> i1_t
     | A.Void -> void_t  (* need void? see return types *)
-    | A.Struct_typ(s) -> StringMap.find s m
+    | A.Struct_typ(sname) -> StringMap.find sname m
     | _ -> i32_t (* placed due to error. add string *) in
 
   (* init value for each type
@@ -85,7 +84,6 @@ let translate (stmts) =
   let functions = [main_func]@fdecls in
   let structs = sdecls in
 
-  
   (* restructured code.
     let build_proto2 m stmt = match stmt with
       A.Fdecl fdecl -> build_proto1 m fdecl
@@ -96,25 +94,28 @@ let translate (stmts) =
 
   let struct_hash:(string, L.lltype) Hashtbl.t = Hashtbl.create 10 in
   
+  (* struct type *)
   let make_struct strc =
     let struct_t = L.named_struct_type context strc.S.sname in
     Hashtbl.add struct_hash strc.S.sname struct_t in
-    
-  let struct_ltypes =
-      let struct_ltype m st =
-          let decls_array = Array.of_list ( List.rev ( List.fold_left 
-              (fun l (t,_) -> (_ltype_of_typ m t)::l) [] st.S.vdecls) )
-      in let named_struct = L.named_struct_type context st.S.sname
-      in L.struct_set_body named_struct decls_array false ;
+  
+  (* struct llvm types *)
+  let struct_ltypes = (* is a map *)
+    let struct_ltype m st =  (* allows recursive definition of structs *)
+      (* array of vdecls. array needed for llvm func *)
+      let decls_array = Array.of_list ( List.rev ( List.fold_left 
+          (fun l (t,_) -> (_ltype_of_typ m t)::l) [] st.S.vdecls) ) in 
+      let named_struct = L.named_struct_type context st.S.sname in 
+      L.struct_set_body named_struct decls_array false;
       StringMap.add st.S.sname named_struct m in
-      List.fold_left struct_ltype StringMap.empty structs
+  List.fold_left struct_ltype StringMap.empty structs
   in
   
   let ltype_of_typ t = _ltype_of_typ struct_ltypes t in
 
   let make_struct_body strc =
     let struct_t = try Hashtbl.find struct_hash strc.S.sname with 
-      | Not_found -> raise (Exceptions.BugCatch "struct not found in definition") in
+      Not_found -> raise (Exceptions.BugCatch "struct not found in definition") in
     let vdecl_types = List.map (fun (typ, _) -> typ) strc.S.vdecls in
     let vdecls = List.map ltype_of_typ vdecl_types in
     let vdecl_array = Array.of_list vdecls in
@@ -127,7 +128,7 @@ let translate (stmts) =
     try Hashtbl.find struct_hash name
     with | Not_found -> raise(Exceptions.InvalidStruct name) in
 
-  (* build prototypes *)
+  (* build function prototypes *)
   let prototypes =  
     let build_proto1 m fdecl =
       let name = fdecl.S.fname
@@ -137,7 +138,7 @@ let translate (stmts) =
     StringMap.add name (L.define_function name ftype the_module, fdecl) m in
   List.fold_left build_proto1 StringMap.empty functions in
 
-
+  (* init values *)
   let init_llvalue id t =
     let ltype = ltype_of_typ t in
     match t with 
@@ -145,7 +146,6 @@ let translate (stmts) =
     | A.Float -> L.const_float ltype 0.0
     | A.String -> L.const_pointer_null string_t
     | _ -> L.const_int ltype 777 (* for errors *) in
-
 
 
   (* alloc globals *)
@@ -326,7 +326,16 @@ let translate (stmts) =
          let result = (match fdecl.S.typ with A.Void -> ""
                                             | _ -> f ^ "_result") in
          L.build_call fdef (Array.of_list actuals) result builder
-      (*| S.Struct_make (s) -> L.build.malloc (find_struct_name s) "tmp" builder*)
+      | S.Array_create (expr_list, length), typ ->
+         (* build array of elems *)
+         let elems = Array.of_list (List.map (fun expr -> build_expr builder expr) expr_list) in
+         let each_type = ltype_of_typ typ in
+         let array_type = L.array_type length each_type in
+         L.const_array array_type elems 
+      | S.Struct_access (var, member), t ->
+         (* need to understand struct representation. *)
+      | S.Array_access (var, expr_t), t ->
+         (* *) 
     in
 
     (* Invoke "f builder" if the current block doesn't already
