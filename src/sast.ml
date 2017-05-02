@@ -1,6 +1,9 @@
 (* semantically checked AST.
 semant.ml takes AST and produces SAST while checking semantics 
 *)
+
+(* create arr type ?*)
+
 type bind = Ast.typ * string
 
 type expr_det =
@@ -13,11 +16,9 @@ type expr_det =
   | Unop of Ast.uop * expr_t
   | Call of string * expr_t list
   | Assign of string * expr_t
-  (* | Struct_create of string * string *)
-  (* | Struct_access of string * string * int * Ast.typ *)
-  | Struct_access of string * string
-  | Array_create of expr_t list * int
-  | Array_access of string * expr_t
+  | Array_create of expr_t list  (* Ast.typ holds length info *)
+  | Array_access of string * int (* var, index *)
+  | Struct_access of string * string * int (* var, attr, index *)
   
   and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
 

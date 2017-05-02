@@ -7,9 +7,16 @@
 
 { open Parser }
 
-let digits = ['0'-'9']+
-let string = '"' (([' '-'!' '#'-'[' ']'-'~'])* as s) '"'
+let digit = ['0'-'9']
+let digits = digit+
+(* simpler versions to check error with struct access
+let letter = ['a'-'z' 'A'-'Z'] 
+let float = (digit+) ['.'] digit+
+let string = '"' (letter (letter | digit)+ as s)'"'
+*) 
+let string = '"' (([' '-'!' '#'-'[' ']'-'~'])* as s) '"' 
 let float = ['+' '-']? (digits '.' ['0'-'9']* | '.' digits) (['e' 'E'] (['+' '-']? digits))?
+
 
 rule token = parse
 (* recursive call to eat white space *)

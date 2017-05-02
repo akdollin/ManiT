@@ -6,14 +6,11 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Float | String | Void | Struct_typ of string
+type typ = Int | Bool | Float | String | Void | Struct_typ of string | Array_typ of typ * int
 
 type bind = typ * string
 
-
 (* need to check if formals have Void typ *)
-(* type bind = typ * string
- *)
 
 type expr =
     IntLit of int
@@ -27,14 +24,9 @@ type expr =
   | Call of string * expr list (*fname and actuals*)
   | Noexpr (* ERROR? is Noexpr ok? *) 
   | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
-  (* | Struct_make of string * string *)
-  | Struct_access of string * string
   | Array_create of expr list
-  | Array_access of string * expr
-
-(* type vdecl =
-    Vdecl of typ * string
-  (* | Assign of string * expr *) *)
+  | Array_access of expr * expr
+  | Struct_access of expr * string (* can attr be an expr too? *)
 
 type stmt =
     Block of stmt list
@@ -59,7 +51,7 @@ and
 strc = {
   sname : string;
   vdecls : bind list;
-(*   vdecls : vdecl list;*)
+  fdecls : func list;
 }
 
 type program = stmt list

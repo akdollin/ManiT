@@ -10,7 +10,7 @@
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT
 %token EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR
 %token RETURN IF ELSE FOR WHILE
-%token DEF GLOBAL STRUCT DOT
+%token DEF GLOBAL STRUCT DOT 
 
 %token INT FLOAT BOOL STRING VOID
 /* token VOID */
@@ -32,7 +32,7 @@
 %left PLUS MINUS
 %left TIMES DIVIDE
 %right NOT NEG
-%right DOT
+%left DOT LBRACK RBRACK
 
 %start program
 %type <Ast.program> program
@@ -57,7 +57,7 @@ stmt:
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
   /* func and structs */
-  | DEF func { Func($2) }
+  | func { Func($1) }
   | STRUCT struct_decl { Struc($2) }
   | vdecl { Vdecl($1) }
 
@@ -70,14 +70,14 @@ struct_typ:
 
 any_typ_not_void:
   | STRING  { String }
-  | FLOAT  { Float }
+  | FLOAT   { Float }
   | INT     { Int }
   | BOOL    { Bool }
   | struct_typ    { Struct_typ($1) }
 
 any_typ:
-  any_typ_not_void  { $1 }
-  | VOID   { Void }
+  | any_typ_not_void { $1 }
+  | VOID  { Void } 
 
 vdecl_list:
   { [] }
@@ -87,16 +87,21 @@ vdecl:
     any_typ_not_void ID SEMI { ($1, $2) }
 
 func:
-   any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
-   { { typ = $1;
-       fname = $2;
-       formals = $4;
-       body = List.rev $7 } }
+   DEF any_typ ID LPAREN formals_opt RPAREN LBRACE stmts RBRACE
+   { { typ = $2;
+       fname = $3;
+       formals = $5;
+       body = List.rev $8 } }
 
 struct_decl: 
-  ID LBRACE vdecl_list RBRACE SEMI 
+  ID LBRACE vdecl_list struct_fdecls RBRACE SEMI 
   { { sname = $1; 
-      vdecls = List.rev $3  } } 
+      vdecls = List.rev $3;
+      fdecls  = List.rev $4 } }
+
+struct_fdecls:
+    /* nothing */ { [] }
+  | func struct_fdecls { $1::$2 }
 
 formals_opt:
     /* nothing */ { [] }
@@ -104,7 +109,7 @@ formals_opt:
 
 formal_list:
     any_typ_not_void ID { [($1, $2)] }
-  | formal_list COMMA any_typ ID { ($3, $4)  :: $1 }
+  | formal_list COMMA any_typ_not_void ID { ($3, $4)  :: $1 }
 
 expr:
     INTLIT          { IntLit($1) }
@@ -129,13 +134,13 @@ expr:
   | NOT expr         { Unop(Not, $2) }
   | LPAREN expr RPAREN { $2 }
   | ID ASSIGN expr   { Assign($1, $3) }
-  | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
+  | ID LPAREN exprs_opt RPAREN { Call($1, $3) }
   | GLOBAL ID ASSIGN expr { GlobalAsn($2, $4) } /* global asn */
   /* structs and arrays */
-  | ID DOT ID { Struct_access($1, $3) }
+  | expr DOT ID { Struct_access($1, $3) }
   /* add struct fcall here */
-  | LBRACK expr_list RBRACK { Array_create($2) }
-  | ID LBRACK expr RBRACK { Array_access($1,$3) }
+  | LBRACK exprs_list RBRACK { Array_create($2) }
+  | expr LBRACK expr RBRACK { Array_access($1,$3) }
 
 exprs_opt:
     /* nothing */ { [] }
