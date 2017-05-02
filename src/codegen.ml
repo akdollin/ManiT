@@ -30,11 +30,6 @@ let globals:(string, L.llvalue) Hashtbl.t = Hashtbl.create 50
 let find_struct_typ name = try Hashtbl.find struct_types name
   with Not_found -> raise(Exceptions.InvalidStruct name)
 
-(* declares struct typ *)
-let declare_struct_typ s =
-  let struct_t = L.named_struct_type context s.S.sname in
-  Hashtbl.add struct_types s.S.sname struct_t
-
 (* Ast type to llvm type *)
 let rec ltype_of_typ = function
     A.Int -> i32_t
@@ -55,12 +50,16 @@ let rec lvalue_of_typ typ = match typ with
   | A.Array_typ(elem_typ, length) -> L.const_array (ltype_of_typ elem_typ) (Array.make length (lvalue_of_typ elem_typ))
   | _ -> raise(Exceptions.BugCatch "no default value for this typ") 
 
-
 (* expr to str
 let expr_to_str e = match e with
   S.Id(str) -> str
   | _ -> raise (Exceptions.BugCatch "string_of_expr")
 *)
+
+(* declares struct typ *)
+let declare_struct_typ s =
+  let struct_t = L.named_struct_type context s.S.sname in
+  Hashtbl.add struct_types s.S.sname struct_t
 
 (* builds the body of struct typ *)
 let define_struct_body s =
@@ -115,20 +114,16 @@ let rec build_function fdecl =
   List.fold_left2 add_formal StringMap.empty fdecl.S.formals
   (Array.to_list (L.params the_function)) in
   
-  (* at start, formals are the only locals. 
-  recursively build through Asn expr or struct vdecl stmt
-  added extra step to use hashtbl *)
+  (* at start, formals are the only locals. added extra step to use hashtbl *)
   let locals:(string, L.llvalue) Hashtbl.t = Hashtbl.create 50 in
   let _ = StringMap.iter (fun id formal -> Hashtbl.add locals id formal) formals in
 
   (* original lookup: Return the value for a variable or formal argument *)
-  let find_var id = try Hashtbl.find locals id
-    with Not_found -> Hashtbl.find globals id in
-    (* need to use not_found
-    with Not_found -> raise (Failure ("undeclared variable " ^ id)) in *)
+  (* no raise Failure here to use Not_found *)
+  let find_var id = try Hashtbl.find locals id with Not_found -> Hashtbl.find globals id
+  and find_local id = Hashtbl.find locals id 
+  and find_global id = Hashtbl.find globals id in
   
-  (* need separate functions for find globals and locals *)
-
   (* print format typ. nested in Call? *)
 
   (* Returns addr of expr. used for lhs of assignment expr *)
@@ -139,7 +134,7 @@ let rec build_function fdecl =
         let addr = L.build_struct_gep llvalue index "tmp" builder in addr
     | S.Array_access (arr_name, index), _ ->
         let llvalue = find_var arr_name in
-        let addr = L.build_gep llvalue [| L.const_int i32_t 0; L.const_int i32_t index|] "array" builder in addr
+        let addr = L.build_gep llvalue [| L.const_int i32_t 0; L.const_int i32_t index |] "array" builder in addr
     | _ -> raise(Failure("cannot get addr of LHS")) in
   
   (* Allocates lhs when assignment is declaration *)
@@ -148,11 +143,7 @@ let rec build_function fdecl =
         A.Int | A.Float | A.Bool | A.String | A.Array_typ(_,_) -> lvalue_of_typ typ
       | _ -> raise(Failure("cannot alloc for exprs of these typs"))
     in
-      (* unused 
-        A.Int | A.Float | A.Bool | A.String -> default_llvalue_of_typ typ 
-      | A.Array_typ (each_typ, length) -> L.const_array (ltype_of_typ each_typ) 
-                                          (array_of_zeros length (default_llvalue_of_typ typ))
-      *)
+    
     (* if not in main and not in block, global. else, local *)
     (if ("main" = fdecl.S.fname) && not in_block 
     (* delcare and add to map *)
@@ -165,9 +156,6 @@ let rec build_function fdecl =
     let init = match typ with
         A.Struct_typ(_) -> lvalue_of_typ typ
       | _ -> raise(Failure("cannot alloc for stmts of these typs")) in
-      (* unused
-        A.Struct_typ(styp_name) -> L.const_named_struct (find_struct_typ styp_name) [||]
-      *)
     
     (* same as above *)
     (if ("main" = fdecl.S.fname) && not in_block 
@@ -243,7 +231,7 @@ let rec build_function fdecl =
     (* build array literal *)
     | S.Array_create (expr_list), arr_typ  ->
        (match arr_typ with 
-          A.Array_typ(typ,length) ->
+          A.Array_typ(typ, length) ->
              let elems = Array.of_list (List.map (fun expr -> build_expr builder in_b expr) expr_list) in
              let each_type = ltype_of_typ typ in
              let array_type = L.array_type each_type length in
@@ -251,10 +239,10 @@ let rec build_function fdecl =
         | _ -> raise(Failure("non-array types in create"))) 
     
     | S.Array_access (arr, index), _ ->
-       let llvalue = find_var arr in
-       let loaded_value = L.build_load llvalue "loaded" builder in
-       let addr = L.build_gep loaded_value [|L.const_int i32_t 0; L.const_int i32_t index|] "arr addr" builder in
-       L.build_load addr "array_access" builder
+       let arr_lvalue = find_var arr in
+       let loaded_lvalue = L.build_load arr_lvalue "loaded" builder in
+       let elem_ptr = L.build_gep arr_lvalue (*loaded_lvalue*) [|L.const_int i32_t 0; L.const_int i32_t index|] "arr addr" builder in
+       L.build_load elem_ptr "array_access" builder
 
     | S.Struct_access (var, attr, index), t ->
        let llvalue = find_var var in
