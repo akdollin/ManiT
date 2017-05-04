@@ -7,7 +7,15 @@ module StringMap = Map.Make(String)
 
 let built_in = [("print", A.String, A.Int)]
 
-let global_env = { funcs = [] }
+let global_env = { 
+    funcs = [
+        { typ = A.String; fname = "open"; formals = [(A.String,"a"); (A.String,"b")]; body = [] };
+        { typ = A.Int; fname = "write"; formals = [(A.String,"a"); (A.Int,"b"); (A.Int,"c"); (A.String,"d")]; body = [] };
+        { typ = A.String; fname = "read"; formals = [(A.String,"a"); (A.Int,"b"); (A.Int,"c"); (A.String,"d")]; body = [] };
+        { typ = A.String; fname = "fgets"; formals = [(A.String,"a"); (A.Int,"b"); (A.String,"c")]; body = [] };
+        { typ = A.Int; fname = "len"; formals = [(A.String,"a")]; body = [] };
+    ] 
+}
 
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
 (* let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10 *)
@@ -149,7 +157,7 @@ let rec check_expr (env : environment) = function
     (* check types to each actuals and get types of formals from fdecl. *)
     let typed_actuals = List.map (fun e -> (check_expr env e)) actuals in
     match name with
-      | "print" -> Call("print", typed_actuals), A.Int
+      | "print" -> Call("print", typed_actuals), A.Void
       | _ -> (* non-print functions *) (
         let func = try find_func name with Not_found ->
           raise(Failure("undefined function was called.")) in

@@ -93,7 +93,7 @@ let fputs_t = L.function_type i32_t [| i32_t ; str_t |] in
 let fputs_func = L.declare_function "fputs" fputs_t the_module in
 
 (*Args: str, num of chars to copy, file pointer*)
-let fgets_t = L.function_type ptr_t [| str_t; i32_t; str_t |] in
+let fgets_t = L.function_type str_t [| str_t; i32_t; str_t |] in
 let fgets_func = L.declare_function "fgets" fgets_t the_module in
 
 let fwrite_t = L.function_type i32_t [| str_t; i32_t; i32_t; str_t |] in
@@ -249,22 +249,22 @@ let rec build_function fdecl =
           L.build_call printf_func [| string_format_str ; (L.build_global_stringptr "" "" builder) |] 
       | _ -> raise(Failure("Call semant failed"))) "printf" builder
     (* built in functions *)
-    | S.Call ("open", e) ->
+    | S.Call ("open", e), t ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call open_file_func (Array.of_list actuals) "fopen" builder
-    | S.Call ("fgets", e) ->
+    | S.Call ("fgets", e), t ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fgets_func (Array.of_list actuals) "fgets" builder
-    | S.Call ("read", e) ->
+    | S.Call ("read", e), t ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fread_func (Array.of_list actuals) "fread" builder
-    | S.Call ("write", e) ->
+    | S.Call ("write", e), t ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fwrite_func (Array.of_list actuals) "fwrite" builder
-    | S.Call ("len", e) ->
+    | S.Call ("len", e), t ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call strlen_func (Array.of_list actuals) "strlen" builder
-    | S.Call ("close", e) ->
+    | S.Call ("close", e), t ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call close_file_func (Array.of_list actuals) "fclose" builder
 
