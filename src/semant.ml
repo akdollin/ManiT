@@ -14,6 +14,8 @@ let global_env = {
         { typ = A.String; fname = "read"; formals = [(A.String,"a"); (A.Int,"b"); (A.Int,"c"); (A.String,"d")]; body = [] };
         { typ = A.String; fname = "fgets"; formals = [(A.String,"a"); (A.Int,"b"); (A.String,"c")]; body = [] };
         { typ = A.Int; fname = "len"; formals = [(A.String,"a")]; body = [] };
+        { typ = A.Int; fname = "close"; formals = [(A.String,"a")]; body = [] };
+        { typ = A.Int; fname = "fork"; formals = []; body = [] };
     ] 
 }
 

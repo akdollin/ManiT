@@ -33,3 +33,20 @@ struct tmp {
 
 a = (1 + 1) * 2;
 print(a);
+
+pid = fork();
+if (pid == 0)
+{
+	f1 = open("tmp.txt", "a");
+	tmp = "hello1";
+	write(tmp,1,6, f1);
+	close(f1);
+}
+if (pid != 0)
+{
+	f2 = open("tmp.txt", "a");
+	tmp1 = "hello2";
+	write(tmp1,1,6,f2);
+	close(f2);
+}
+

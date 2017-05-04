@@ -105,6 +105,10 @@ let fread_func = L.declare_function "fread" fread_t the_module in
 let strlen_t = L.function_type i32_t [| str_t |] in
 let strlen_func = L.declare_function "strlen" strlen_t the_module in
 
+(* forking *)
+let fork_t = L.function_type i32_t [||] in
+let fork_func = L.declare_function "fork" fork_t the_module in
+
 (* ******************* END FILE READ WRITE ******************** *)
 
 
@@ -267,6 +271,8 @@ let rec build_function fdecl =
     | S.Call ("close", e), t ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call close_file_func (Array.of_list actuals) "fclose" builder
+    | S.Call ("fork", e), t ->
+        L.build_call fork_func (Array.of_list []) "fork" builder
 
     (* end file functions *)
     | S.Call (f, act), t ->
