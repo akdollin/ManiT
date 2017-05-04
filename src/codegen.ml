@@ -86,7 +86,7 @@ let printf_func = L.declare_function "printf" printf_t the_module in
 let open_file_t = L.function_type str_t [| str_t ; str_t |] in
 let open_file_func = L.declare_function "fopen" open_file_t the_module in
 
-let close_file_t = L.function_type i32_t [| i32_t |] in
+let close_file_t = L.function_type i32_t [| str_t |] in
 let close_file_func = L.declare_function "fclose" close_file_t the_module in
 
 let fputs_t = L.function_type i32_t [| i32_t ; str_t |] in
