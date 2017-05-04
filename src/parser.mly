@@ -56,7 +56,6 @@ stmt:
   | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt 
      { For($3, $5, $7, $9) }
   | WHILE LPAREN expr RPAREN stmt { While($3, $5) }
-  /* func and structs */
   | func { Func($1) }
   | STRUCT struct_decl { Struc($2) }
   | vdecl { Vdecl($1) }
