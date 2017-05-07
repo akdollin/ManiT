@@ -93,7 +93,12 @@ let rec check_expr (env : environment) = function
           env.scope.variables <- (decl :: env.scope.variables);
           Assign((Id(name), right_typ), (expr, right_typ)), right_typ
         in sast_assign
-      | A.Array_access(arrayName,index) -> raise(Failure("in array assign"))
+      | A.Array_access(arrayName,index) -> 
+        let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
+        let (arr, left_typ) = check_expr env lhs in
+          if left_typ <> right_typ (* type mismatch. depends on rule. *)
+          then raise (Failure (" type mismatch in array assign"))
+          else Assign((strct, left_typ), (expr, right_typ)), right_typ
       | A.Struct_access(structName, field) -> 
         let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
         let (strct, left_typ) = check_expr env lhs in

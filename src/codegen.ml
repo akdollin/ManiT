@@ -56,6 +56,8 @@ let expr_to_str e = match e with
   | _ -> raise (Exceptions.BugCatch "string_of_expr")
 *)
 
+
+
 (* declares struct typ *)
 let declare_struct_typ s =
   let struct_t = L.named_struct_type context s.S.sname in
@@ -126,18 +128,8 @@ let rec build_function fdecl =
   
   (* print format typ. nested in Call? *)
 
-  (* unused
-  (* Returns addr of expr. used for lhs of assignment expr *)
-  let addr_of_expr expr builder = match expr with
-      S.Id(id), _ -> find_var id
-    | S.Struct_access(var, _ ,index), _ ->
-        let llvalue = find_var var in (* llvalue from build_alloca *)
-        let addr = L.build_struct_gep llvalue index "tmp" builder in addr
-    | S.Array_access (arr_name, index), _ ->
-        let llvalue = find_var arr_name in
-        let addr = L.build_gep llvalue [| L.const_int i32_t 0; L.const_int i32_t index |] "array" builder in addr
-    | _ -> raise(Failure("cannot get addr of LHS")) in
-  *)
+
+ 
   
   (* Allocates lhs when assignment is declaration *)
   let alloc_expr id typ in_block builder = 
@@ -164,7 +156,22 @@ let rec build_function fdecl =
     then let global = L.define_global id init the_module in Hashtbl.add globals id global
     else let local =  L.build_alloca (ltype_of_typ typ) id builder in Hashtbl.add locals id local);
     builder in
-        
+
+  (* Returns addr of expr. used for lhs of assignment expr *)
+  let addr_of_expr expr typ in_b builder = match expr with
+    S.Id(id) ->
+      (* allocate space for lhs *)
+      let var = try find_var id with Not_found ->
+        (alloc_expr id typ in_b builder; find_var id) in var
+    | S.Struct_access (var, _, index) ->
+        let llvalue = find_var var in (* llvalue from build_alloca *)
+        let addr = L.build_struct_gep llvalue index "tmp" builder in addr
+    | S.Array_access(arrayName,index) ->
+        let llvalue = try find_var arrayName with Not_found ->
+          raise(Failure("Cannot assign to array that doesnt exist - Codegen")) in
+        let addr = L.build_gep llvalue [| L.const_int i32_t 0; L.const_int i32_t index |] "array" builder in addr
+    | _ -> raise(Failure("cannot get addr of LHS")) in
+
   (* Construct code for an expression; return its value *)
   let rec build_expr builder in_b = function
       S.IntLit i, t -> L.const_int i32_t i
@@ -197,16 +204,21 @@ let rec build_function fdecl =
           A.Neg     -> L.build_neg
         | A.Not     -> L.build_not) e' "tmp" builder
     | S.Assign ((lhs, ltyp), rhs), typ ->
-      let target = match lhs with 
+
+       let l_val = (addr_of_expr lhs typ in_b builder)
+(*        let target = match lhs with 
         S.Id(id) ->
           (* allocate space for lhs *)
           let var = try find_var id with Not_found ->
             (alloc_expr id typ in_b builder; find_var id) in var
-        | _ -> raise(Failure("Id not found in codegen"))
+        | S.Array_access(arrayName,index)-> raise(Failure("in array assign codegen"))
+        | S.Struct_access (var, attr, index)-> let left = build_expr builder in_b (lhs, ltyp) in left 
+        | _ -> raise(Failure("Id not found in codegen"))  *)
       in
+
       (* build rhs and store *)
       let e' = build_expr builder in_b rhs in
-        ignore (L.build_store e' (target) builder); e'
+        ignore (L.build_store e' l_val builder); e' 
     | S.Call ("print", [(e, expr_t)]), t ->
     (*let t = (* find the type of it *) in*)
       let var = build_expr builder in_b (e,expr_t) in

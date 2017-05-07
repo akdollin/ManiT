@@ -18,6 +18,5 @@ struct test tester;
 tester.b = 4;
 
 arr = [1,2,3];
-arr[0];
 
-print("hi");
+print(tester.b);

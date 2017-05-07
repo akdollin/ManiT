@@ -18,7 +18,7 @@ type expr_det =
   | Assign of expr_t * expr_t
   | Array_create of expr_t list  (* Ast.typ holds length info *)
   | Array_access of string * int (* var, index *)
-  | Struct_access of string * string * int (* var, attr, index *)
+  | Struct_access of string * string * int (* var, attr, index, type *)
   
   and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
 
