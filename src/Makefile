@@ -25,6 +25,11 @@ parse :
 .PHONY : test
 test :
 	./testall.sh
+
+.PHONY : test2
+test2 :
+	./manit.native < tests/helloworld.mt > output.ll
+	lli output.ll
 	
 # More detailed: build using ocamlc/ocamlopt + ocamlfind to locate LLVM
 
