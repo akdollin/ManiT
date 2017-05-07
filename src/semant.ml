@@ -79,19 +79,30 @@ let rec check_expr (env : environment) = function
   populates scope's variable if not found.
   modified from hawk. need testing. 
   need to add rules/function for promotion/demotion here. *)
-  | Ast.Assign(name, expr) ->
-    let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
-    let sast_assign = (* (n, (e, e's typ)), n's typ *) 
-    try let (name, left_typ) = find_var env.scope name in
-      if left_typ <> right_typ (* type mismatch. depends on rule. *)
-      then raise (Failure (" type mismatch "))
-      else Assign(name, (expr, right_typ)), right_typ
-    with Not_found -> (* new name. declaration. *)
-      let decl = (name, right_typ) in 
-      env.scope.variables <- (decl :: env.scope.variables);
-      Assign(name, (expr, right_typ)), right_typ
-    in sast_assign
+  | Ast.Assign(lhs, expr) ->
+    let thing = match lhs with 
+      A.Id(name) -> 
+        let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
+        let sast_assign = (* (n, (e, e's typ)), n's typ *) 
+        try let (name, left_typ) = find_var env.scope name in
+          if left_typ <> right_typ (* type mismatch. depends on rule. *)
+          then raise (Failure (" type mismatch "))
+          else Assign((Id(name), left_typ), (expr, right_typ)), right_typ
+        with Not_found -> (* new name. declaration. *)
+          let decl = (name, right_typ) in 
+          env.scope.variables <- (decl :: env.scope.variables);
+          Assign((Id(name), right_typ), (expr, right_typ)), right_typ
+        in sast_assign
+      | A.Array_access(arrayName,index) -> raise(Failure("in array assign"))
+      | A.Struct_access(structName, field) -> 
+        let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
+        let (strct, left_typ) = check_expr env lhs in
+          if left_typ <> right_typ (* type mismatch. depends on rule. *)
+          then raise (Failure (" type mismatch in struct assign"))
+          else Assign((strct, left_typ), (expr, right_typ)), right_typ
+      | _ -> raise(Failure("Not a valid assign: We only allow id, struct, and array assign"))
 
+    in thing
   (* Binop(expr, op, expr)
   checks types of L.H.S and R.H.S
   we need to specify rules for promotion/demotion of OPs *)

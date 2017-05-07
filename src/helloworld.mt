@@ -12,11 +12,12 @@ struct test {
 	int b;
 };
 
+
 struct test tester;
 
-arr = [1,2,3];
+tester.b = 4;
 
-arr[0] = 2;
+arr = [1,2,3];
+arr[0];
 
 print("hi");
-print(arr[0]);

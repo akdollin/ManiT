@@ -132,7 +132,7 @@ expr:
   | MINUS expr %prec NEG { Unop(Neg, $2) } 
   | NOT expr         { Unop(Not, $2) }
   | LPAREN expr RPAREN { $2 }
-  | ID ASSIGN expr   { Assign($1, $3) }
+  | expr ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN exprs_opt RPAREN { Call($1, $3) }
   | GLOBAL ID ASSIGN expr { GlobalAsn($2, $4) } /* global asn */
   /* structs and arrays */

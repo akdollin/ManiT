@@ -196,13 +196,17 @@ let rec build_function fdecl =
         (match op with
           A.Neg     -> L.build_neg
         | A.Not     -> L.build_not) e' "tmp" builder
-    | S.Assign (id, e), typ ->
-      (* allocate space for lhs *)
-      let var = try find_var id with Not_found ->
-        (alloc_expr id typ in_b builder; find_var id) in
+    | S.Assign ((lhs, ltyp), rhs), typ ->
+      let target = match lhs with 
+        S.Id(id) ->
+          (* allocate space for lhs *)
+          let var = try find_var id with Not_found ->
+            (alloc_expr id typ in_b builder; find_var id) in var
+        | _ -> raise(Failure("Id not found in codegen"))
+      in
       (* build rhs and store *)
-      let e' = build_expr builder in_b e in
-        ignore (L.build_store e' (var) builder); e'
+      let e' = build_expr builder in_b rhs in
+        ignore (L.build_store e' (target) builder); e'
     | S.Call ("print", [(e, expr_t)]), t ->
     (*let t = (* find the type of it *) in*)
       let var = build_expr builder in_b (e,expr_t) in
