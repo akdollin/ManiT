@@ -21,5 +21,5 @@ arr = [1,2,3];
 arr[0] = 10;
 
 print(tester.b);
-print(arr[0]);
+print(arr[2]);
 

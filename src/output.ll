@@ -27,12 +27,12 @@ entry:
   store i1 false, i1* @c
   store double 2.100000e+00, double* @d
   store i32 4, i32* getelementptr inbounds (%test, %test* @tester, i32 0, i32 0)
-  store [3 x i32] [i32 3, i32 2, i32 1], [3 x i32]* @arr
+  store [3 x i32] [i32 1, i32 2, i32 3], [3 x i32]* @arr
   store i32 10, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @arr, i32 0, i32 0)
   %struct_access = load i32, i32* getelementptr inbounds (%test, %test* @tester, i32 0, i32 0)
   %printf = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt, i32 0, i32 0), i32 %struct_access)
   %loaded = load [3 x i32], [3 x i32]* @arr
-  %array_access = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @arr, i32 0, i32 0)
+  %array_access = load i32, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @arr, i32 0, i32 2)
   %printf1 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @fmt, i32 0, i32 0), i32 %array_access)
   ret i32 0
 }

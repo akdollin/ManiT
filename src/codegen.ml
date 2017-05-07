@@ -250,7 +250,8 @@ let rec build_function fdecl =
     | S.Array_create (expr_list), arr_typ  ->
        (match arr_typ with 
           A.Array_typ(typ, length) ->
-             let elems = Array.of_list (List.map (fun expr -> build_expr builder in_b expr) expr_list) in
+            let revElem_list = List.rev (expr_list) in
+             let elems = Array.of_list (List.map (fun expr -> build_expr builder in_b expr) revElem_list) in
              let each_type = ltype_of_typ typ in
              let array_type = L.array_type each_type length in
              L.const_array array_type elems
