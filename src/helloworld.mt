@@ -1,35 +1,22 @@
-d = 4;
-/* comment */
+a = 4;
+b = "string";
+c = true;
+d = 1.1;
 
-def int foo(int a)
-{
-  return a;
-}
+a = 5;
+b = "hello";
+c = false;
+d = 2.1;
 
-print(foo(4));
-
-def void bar(int b)
-{
-	i = 0;
-	for (i = 0; i < b; i = i + 1)
-	{
-		print(i);
-	}
-}
-
-bar(4);
-
-def void test()
-{
-	print("hello");
-}
-
-test();
-
-struct tmp {
-	int tmp1;
-	int tmp2;
+struct test {
+	int b;
 };
 
-a = (1 + 1) * 2;
-print(a);
+struct test tester;
+
+arr = [1,2,3];
+
+arr[0] = 2;
+
+print("hi");
+print(arr[0]);
