@@ -89,7 +89,8 @@ let rec check_expr (env : environment) = function
   populates scope's variable if not found.
   modified from hawk. need testing. 
   need to add rules/function for promotion/demotion here. *)
-  | Ast.Assign(name, expr) ->
+  | Ast.Assign(lhs, rhs) ->
+    raise(Failure("here"))
     let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
     let sast_assign = (* (n, (e, e's typ)), n's typ *) 
     try let (name, left_typ) = find_var env.scope name in
