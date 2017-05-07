@@ -89,22 +89,18 @@ let rec check_expr (env : environment) = function
   populates scope's variable if not found.
   modified from hawk. need testing. 
   need to add rules/function for promotion/demotion here. *)
-  | Ast.Assign(lhs, rhs) ->
-    let (e2, r_type) = check_expr env rhs in
-    let tmp = 
-        (match lhs with
-          A.Id(name) ->
-            try let (name, left_typ) = find_var env.scope name in
-              if left_typ <> r_type (* type mismatch. depends on rule. *)
-              then raise (Failure (" type mismatch "))
-              else Assign((Id(name), r_type), (e2, r_type))
-            with Not_found ->
-              let decl = (name, r_type) in
-              env.scope.variables <- (decl :: env.scope.variables);
-              Assign((Id(name), r_type), (e2, r_type))
-          | _ -> raise(Failure("anything else"))
-        ) in
-    tmp, r_type
+  | Ast.Assign(name, expr) ->
+    let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
+    let sast_assign = (* (n, (e, e's typ)), n's typ *) 
+    try let (name, left_typ) = find_var env.scope name in
+      if left_typ <> right_typ (* type mismatch. depends on rule. *)
+      then raise (Failure (" type mismatch "))
+      else Assign(name, (expr, right_typ)), right_typ
+    with Not_found -> (* new name. declaration. *)
+      let decl = (name, right_typ) in 
+      env.scope.variables <- (decl :: env.scope.variables);
+      Assign(name, (expr, right_typ)), right_typ
+    in sast_assign
 
     (*
     let tmp = (match lhs with
