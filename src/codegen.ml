@@ -160,7 +160,6 @@ let rec build_function fdecl =
   
   (* print format typ. nested in Call? *)
 
-  (* unused
   (* Returns addr of expr. used for lhs of assignment expr *)
   let addr_of_expr expr builder = match expr with
       S.Id(id), _ -> find_var id
@@ -171,7 +170,6 @@ let rec build_function fdecl =
         let llvalue = find_var arr_name in
         let addr = L.build_gep llvalue [| L.const_int i32_t 0; L.const_int i32_t index |] "array" builder in addr
     | _ -> raise(Failure("cannot get addr of LHS")) in
-  *)
   
   (* Allocates lhs when assignment is declaration *)
   let alloc_expr id typ in_block builder = 
@@ -230,6 +228,11 @@ let rec build_function fdecl =
         (match op with
           A.Neg     -> L.build_neg
         | A.Not     -> L.build_not) e' "tmp" builder
+    | S.Assign (e1, e2), typ ->
+      let rhs = build_expr builder in_b e2 in
+      ignore(let lhs = (addr_of_expr e1  builder) in (L.build_store rhs lhs builder)); rhs
+
+(*
     | S.Assign (id, e), typ ->
       (* allocate space for lhs *)
       let var = try find_var id with Not_found ->
@@ -237,6 +240,7 @@ let rec build_function fdecl =
       (* build rhs and store *)
       let e' = build_expr builder in_b e in
         ignore (L.build_store e' (var) builder); e'
+        *)
     | S.Call ("print", [(e, expr_t)]), t ->
     (*let t = (* find the type of it *) in*)
       let var = build_expr builder in_b (e,expr_t) in

@@ -89,18 +89,92 @@ let rec check_expr (env : environment) = function
   populates scope's variable if not found.
   modified from hawk. need testing. 
   need to add rules/function for promotion/demotion here. *)
-  | Ast.Assign(name, expr) ->
-    let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
-    let sast_assign = (* (n, (e, e's typ)), n's typ *) 
-    try let (name, left_typ) = find_var env.scope name in
-      if left_typ <> right_typ (* type mismatch. depends on rule. *)
-      then raise (Failure (" type mismatch "))
-      else Assign(name, (expr, right_typ)), right_typ
-    with Not_found -> (* new name. declaration. *)
-      let decl = (name, right_typ) in 
-      env.scope.variables <- (decl :: env.scope.variables);
-      Assign(name, (expr, right_typ)), right_typ
-    in sast_assign
+  | Ast.Assign(lhs, rhs) ->
+    let (e2, r_type) = check_expr env rhs in
+    let tmp = 
+        (match lhs with
+          A.Id(name) ->
+            try let (name, left_typ) = find_var env.scope name in
+              if left_typ <> r_type (* type mismatch. depends on rule. *)
+              then raise (Failure (" type mismatch "))
+              else Assign((Id(name), r_type), (e2, r_type))
+            with Not_found ->
+              let decl = (name, r_type) in
+              env.scope.variables <- (decl :: env.scope.variables);
+              Assign((Id(name), r_type), (e2, r_type))
+          | _ -> raise(Failure("anything else"))
+        ) in
+    tmp, r_type
+
+    (*
+    let tmp = (match lhs with
+      A.Array_access(e1, e2) ->
+        let name = (match e1 with
+          A.Id(s) -> s
+        | _ -> raise(Failure("improper array access"))) in
+        let (e1, l_type) = check_expr env lhs
+        and (e2, r_type) = check_expr env rhs in
+      
+        let sast_assign =
+        try let (name, _) = find_var env.scope name in
+          if l_type <> r_type
+          then raise (Failure (" type mismatch "))
+          else Assign((e1, l_type), (e2, r_type)), r_type
+        with Not_found ->
+          raise (Failure ("array does not exist"))
+        in sast_assign
+    | A.Struct_access(e1, id) ->
+        let name = (match e1 with
+          A.Id(s) -> s
+        | _ -> raise(Failure("improper struct access"))) in
+        let (e1, l_type) = check_expr env lhs
+        and (e2, r_type) = check_expr env rhs in
+
+        let sast_assign = 
+        try let (name,_) = find_var env.scope name in
+          if l_type <> r_type
+          then raise(Failure(" type mismatch "))
+          else Assign((e1, l_type), (e2, r_type)), r_type
+        with Not_found ->
+          raise (Failure("struct does not exist"))
+        in sast_assign
+    | A.Id(name) ->
+        let (e2, r_type) = check_expr env rhs in
+
+        let (rhs, right_typ) = check_expr env rhs in (* R.H.S typ *)
+        let sast_assign = (* (n, (e, e's typ)), n's typ *) 
+        try let (name, left_typ) = find_var env.scope name in
+          let (e1, l_type) = check_expr env lhs in 
+          if left_typ <> right_typ (* type mismatch. depends on rule. *)
+          then raise (Failure (" type mismatch "))
+          else Assign((e1, right_typ), (e2, right_typ)), right_typ
+        with Not_found -> (* new name. declaration. *)
+          let decl = (name, right_typ) in
+          env.scope.variables <- (decl :: env.scope.variables);
+          Assign((Sast.Id(name), right_typ), (e2, right_typ)), right_typ
+        in sast_assign
+
+    | _ -> raise(Failure("cannot assign to expression"))); tmp
+    *)
+
+    (*
+  | Ast.Assign(s, expr) ->
+    match s with
+     A.Id(name) ->
+        let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
+        let sast_assign = (* (n, (e, e's typ)), n's typ *) 
+        try let (name, left_typ) = find_var env.scope name in
+          if left_typ <> right_typ (* type mismatch. depends on rule. *)
+          then raise (Failure (" type mismatch "))
+          else Assign((Id(name), right_typ), (expr, right_typ)), right_typ
+        with Not_found -> (* new name. declaration. *)
+          let decl = (name, right_typ) in 
+          env.scope.variables <- (decl :: env.scope.variables);
+          Assign((Id(name), right_typ), (expr, right_typ)), right_typ
+        in sast_assign
+      | _ -> raise(Failure("not an Id"))
+
+*)
 
   (* Binop(expr, op, expr)
   checks types of L.H.S and R.H.S

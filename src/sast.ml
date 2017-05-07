@@ -15,7 +15,7 @@ type expr_det =
   | Binop of expr_t * Ast.op * expr_t
   | Unop of Ast.uop * expr_t
   | Call of string * expr_t list
-  | Assign of string * expr_t
+  | Assign of expr_t * expr_t
   | Array_create of expr_t list  (* Ast.typ holds length info *)
   | Array_access of string * int (* var, index *)
   | Struct_access of string * string * int (* var, attr, index *)
