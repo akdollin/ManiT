@@ -98,7 +98,7 @@ let rec check_expr (env : environment) = function
         let (arr, left_typ) = check_expr env lhs in
           if left_typ <> right_typ (* type mismatch. depends on rule. *)
           then raise (Failure (" type mismatch in array assign"))
-          else Assign((strct, left_typ), (expr, right_typ)), right_typ
+          else Assign((arr, left_typ), (expr, right_typ)), right_typ
       | A.Struct_access(structName, field) -> 
         let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
         let (strct, left_typ) = check_expr env lhs in
@@ -232,9 +232,6 @@ let rec check_expr (env : environment) = function
             then raise(Failure("access out of bounds"))
             else Array_access(var, index), var_typ (* no need to return the value here! *)
         | _ -> raise(Failure("array access: only int lit allowed for now"))
-
-
-
 
 (* gets return types from checked stmts with typed expressions *)
 let rec get_return_types typ_list stmt = match stmt with
