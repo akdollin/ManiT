@@ -7,7 +7,18 @@ module StringMap = Map.Make(String)
 
 let built_in = [("print", A.String, A.Int)]
 
-let global_env = { funcs = [] }
+let global_env = { 
+    funcs = [
+        { typ = A.String; fname = "open"; formals = [(A.String,"a"); (A.String,"b")]; body = [] };
+        { typ = A.Int; fname = "write"; formals = [(A.String,"a"); (A.Int,"b"); (A.Int,"c"); (A.String,"d")]; body = [] };
+        { typ = A.String; fname = "read"; formals = [(A.String,"a"); (A.Int,"b"); (A.Int,"c"); (A.String,"d")]; body = [] };
+        { typ = A.String; fname = "fgets"; formals = [(A.String,"a"); (A.Int,"b"); (A.String,"c")]; body = [] };
+        { typ = A.Int; fname = "len"; formals = [(A.String,"a")]; body = [] };
+        { typ = A.Int; fname = "close"; formals = [(A.String,"a")]; body = [] };
+        { typ = A.Int; fname = "fork"; formals = []; body = [] };
+    ] 
+}
+
 
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
 (* let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10 *)

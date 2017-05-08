@@ -80,6 +80,40 @@ let translate_functions functions the_module =
 let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
 let printf_func = L.declare_function "printf" printf_t the_module in
 
+(* file open and close *)
+(*
+ *  * fopen takes 2 arguments, a filename, which is a string, and a mode (e.g. rw)
+ *   * It returns a file pointer on success.
+ *    *)
+let open_file_t = L.function_type str_t [| str_t ; str_t |] in
+let open_file_func = L.declare_function "fopen" open_file_t the_module in
+
+let close_file_t = L.function_type i32_t [| str_t |] in
+let close_file_func = L.declare_function "fclose" close_file_t the_module in
+
+let fputs_t = L.function_type i32_t [| i32_t ; str_t |] in
+let fputs_func = L.declare_function "fputs" fputs_t the_module in
+
+(*Args: str, num of chars to copy, file pointer*)
+let fgets_t = L.function_type str_t [| str_t; i32_t; str_t |] in
+let fgets_func = L.declare_function "fgets" fgets_t the_module in
+
+let fwrite_t = L.function_type i32_t [| str_t; i32_t; i32_t; str_t |] in
+let fwrite_func = L.declare_function "fwrite" fwrite_t the_module in
+
+let fread_t = L.function_type i32_t [| str_t; i32_t; i32_t; str_t |] in
+let fread_func = L.declare_function "fread" fread_t the_module in
+
+let strlen_t = L.function_type i32_t [| str_t |] in
+let strlen_func = L.declare_function "strlen" strlen_t the_module in
+
+(* forking *)
+let fork_t = L.function_type i32_t [||] in
+let fork_func = L.declare_function "fork" fork_t the_module in
+
+(* ******************* END FILE READ WRITE ******************** *)
+
+
 (* build function prototypes *)
 let prototypes =  
   let build_proto m fdecl =
@@ -239,6 +273,37 @@ let rec build_function fdecl =
       | A.Void ->
           L.build_call printf_func [| string_format_str ; (L.build_global_stringptr "" "" builder) |] 
       | _ -> raise(Failure("Call semant failed"))) "printf" builder
+    (* built in functions *)
+    | S.Call ("open", e), t ->
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call open_file_func (Array.of_list actuals) "fopen" builder
+    | S.Call ("fgets", e), t ->
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call fgets_func (Array.of_list actuals) "fgets" builder
+    | S.Call ("read", e), t ->
+        (*
+        (* ptr *)
+        let arg1 = List.nth 0 in
+        (* size *)
+        let arg2 = build_expr builder in_b (List.nth 1) in
+        (* count *)
+        let arg3 = build_expr builder in_b (List.nth 2) in
+        (* file object *)
+        let arg4 = build_expr builder in_b (List.nth 3) in
+  *)
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call fread_func (Array.of_list actuals) "fread" builder
+    | S.Call ("write", e), t ->
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call fwrite_func (Array.of_list actuals) "fwrite" builder
+    | S.Call ("len", e), t ->
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call strlen_func (Array.of_list actuals) "strlen" builder
+    | S.Call ("close", e), t ->
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call close_file_func (Array.of_list actuals) "fclose" builder
+    | S.Call ("fork", e), t ->
+        L.build_call fork_func (Array.of_list []) "fork" builder
     | S.Call (f, act), t ->
        let (fdef, fdecl) = StringMap.find f prototypes in
        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev act)) in
