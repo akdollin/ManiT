@@ -10,5 +10,3 @@ struct c {
 };
 
 struct c temp2;
-
-arr = [temp,temp2];

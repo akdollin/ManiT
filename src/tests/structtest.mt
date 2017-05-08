@@ -1,10 +1,8 @@
-struct a = {
+struct tester = {
 	int a;
 	string c;
 	bool d;
 };
 
-struct a b;
-a.d = false;
-
-print(a.d);
+struct tester b;
+b.a = 1;

@@ -12,5 +12,4 @@ struct temp {
 
 struct temp1 {
 	int a;
-	struct b;
 };

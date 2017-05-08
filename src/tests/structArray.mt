@@ -11,6 +11,6 @@ struct c {
 
 struct c temp2;
 
-arr = [temp,temp2];
+temp2.d = 10;
 
-temp3 = arr[0];
+a = temp2.d;

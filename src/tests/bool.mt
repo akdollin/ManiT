@@ -1,2 +1,2 @@
-bool temp = false;
-bool temp2 = true;
+temp = false;
+temp2 = true;
