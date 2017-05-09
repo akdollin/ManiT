@@ -204,15 +204,18 @@ let rec check_expr (env : environment) = function
           A.Id(s) -> s
         | _ -> raise(Failure("struct access: complex vars not supported as of now."))) in
 
-      let (var, A.Struct_typ(sname)) = find_var env.scope var in  (* find the instance of struct that was declared in current scope *)
-      let strc = Hashtbl.find structs_hash sname in (* find strc type definition *)
+      let (name,temp) = find_var env.scope var in  (* find the instance of struct that was declared in current scope *)
+      let structName = match temp with
+        A.Struct_typ(typTemp) -> typTemp
+        | _ -> raise(Failure("unknown struct access")) in
+      let strc = Hashtbl.find structs_hash structName in (* find strc type definition *)
       let (typ, _) = List.find (fun (_, id) -> id = attr) strc.A.vdecls in (* typ of attr *)
       (* find index of attr in struct. this index is used in codegen *)
       let rec index_of_list x l = (match l with
           hd::tl -> let (_,id) = hd in if id = x then 0 else 1 + index_of_list x tl
         | _ -> raise(Failure("index_of_list failed"))) in
       let index = index_of_list attr strc.A.vdecls in
-      Struct_access(var, attr, index), typ
+      Struct_access(name, attr, index), typ
       (* need to handle each error separately for robustness *)
   
   | A.Array_create(expr_list) ->
@@ -229,8 +232,13 @@ let rec check_expr (env : environment) = function
           A.Id(s) -> s
         | _ -> raise(Failure("array access: complex vars not supported as of now."))) in 
       (* find var first *)
-      let (var, A.Array_typ(var_typ, length)) = try find_var env.scope var; with Not_found ->
+      let (var, temp) = try find_var env.scope var with Not_found ->
         raise(Failure("array variable not found")) in
+
+      let (var_typ1, length1) = match temp with
+        A.Array_typ(var_typ, length) -> var_typ, length
+        | _ -> raise(Failure("unknown array access")) in
+
       (* need to check if arr typ *)
       (* check index expr *)
       let (index_expr, index_expr_typ) = check_expr env index_expr in
@@ -239,9 +247,9 @@ let rec check_expr (env : environment) = function
          we only allow int literal (not binop, unop) for now *)
       else match index_expr with
           IntLit(index) -> 
-            if index < 0 || index > length - 1 
+            if index < 0 || index > length1 - 1 
             then raise(Failure("access out of bounds"))
-            else Array_access(var, index), var_typ (* no need to return the value here! *)
+            else Array_access(var, index), var_typ1 (* no need to return the value here! *)
         | _ -> raise(Failure("array access: only int lit allowed for now"))
 
 (* gets return types from checked stmts with typed expressions *)
@@ -305,9 +313,9 @@ let rec check_stmt env = function
 
   | Ast.Vdecl(typ, name) -> 
     (match typ with (* check if struct typ *)
-      A.Struct_typ(strc_name) -> 
-        try ignore(find_var env.scope name); (* if var name already exists *)
-        raise(Failure("Cannot redeclare an existing variable name!")) with 
+      A.Int |A.Bool|A.Float|A.String| A.Void|A.Array_typ(_,_)-> raise(Failure("ManiT is type inferred"))
+      | A.Struct_typ(strc_name) -> 
+        try ignore(find_var env.scope name); raise(Failure("Cannot redeclare an existing variable name!")) with 
         Not_found -> 
             (match check_duplicate_struct strc_name with (* check if struct typ exists *)
               true -> (* add to scope variables and return Vdecl *)
@@ -315,7 +323,8 @@ let rec check_stmt env = function
                 env.scope.variables <- (decl :: env.scope.variables);
                 Vdecl(typ,name)
             | false -> raise(Failure("Struct not declared!")))
-      |_-> raise(Failure("ManiT is type inferred, you dun messed up!")))
+    |_-> raise(Failure("ManiT is type inferred, you dun messed up!")))
+
 
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
@@ -332,8 +341,7 @@ let rec check_stmt env = function
       and (e3, typ3) = check_expr env e3 in
       (if typ2 != A.Bool then raise(Failure("For stmt does not support this type")));
       For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
-(*   | _ -> raise(Failure("unchecked stmts"))
- *)
+
 (* environment is a record with scope and return type. 
 scope is subrecord with parent and variables.
 may want to add more attributes to records. *)    
