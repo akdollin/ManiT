@@ -1,10 +1,5 @@
 
-f = open("close.out", "w");
-
-f1 = open("open.out", "r");
-
-
+f = open("tests/close.out", "w");
 
 close(f);
 
-close(f1);
