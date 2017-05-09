@@ -17,7 +17,7 @@ let global_env = {
         { typ = A.Int; fname = "close"; formals = [(A.String,"a")]; body = [] };
         { typ = A.Int; fname = "fork"; formals = []; body = [] };
         { typ = A.Int; fname = "sleep"; formals = [(A.Int,"a")]; body = [] };
-
+        { typ = A.String; fname = "execlp"; formals = [(A.String,"a"); (A.String,"b"); (A.String,"c");(A.Int,"d")]; body = [] };
     ] 
 }
 

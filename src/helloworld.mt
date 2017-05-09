@@ -27,4 +27,6 @@ testFloat = 1.1;*/
 
 sleep(1);
 
+execlp("cat", "cat", "demo2.mt",0);
 
+sleep(1);

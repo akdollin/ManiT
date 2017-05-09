@@ -111,6 +111,9 @@ let fork_func = L.declare_function "fork" fork_t the_module in
 
 let sleep_t = L.function_type i32_t [|i32_t|] in
 let sleep_func = L.declare_function "sleep" sleep_t the_module in
+
+let execlp_t = L.function_type i32_t [|str_t ; str_t; str_t; i32_t |] in
+let execlp_func = L.declare_function "execlp" execlp_t the_module in
 (* ******************* END FILE READ WRITE ******************** *)
 
 
@@ -275,6 +278,9 @@ let build_function fdecl =
     | S.Call ("open", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call open_file_func (Array.of_list actuals) "fopen" builder
+    | S.Call ("execlp", e), _ ->
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call execlp_func (Array.of_list actuals) "execlp" builder
     | S.Call ("fgets", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fgets_func (Array.of_list actuals) "fgets" builder
