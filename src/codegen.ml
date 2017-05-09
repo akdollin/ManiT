@@ -109,6 +109,8 @@ let strlen_func = L.declare_function "strlen" strlen_t the_module in
 let fork_t = L.function_type i32_t [||] in
 let fork_func = L.declare_function "fork" fork_t the_module in
 
+let sleep_t = L.function_type i32_t [|i32_t|] in
+let sleep_func = L.declare_function "sleep" sleep_t the_module in
 (* ******************* END FILE READ WRITE ******************** *)
 
 
@@ -300,6 +302,9 @@ let build_function fdecl =
         L.build_call close_file_func (Array.of_list actuals) "fclose" builder
     | S.Call ("fork", _), _ ->
         L.build_call fork_func (Array.of_list []) "fork" builder
+    | S.Call ("sleep", e), _ ->
+        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
+        L.build_call sleep_func (Array.of_list actuals) "sleep" builder
     | S.Call (f, act), _ ->
        let (fdef, fdecl) = StringMap.find f prototypes in
        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev act)) in
