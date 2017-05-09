@@ -33,7 +33,7 @@ test2 :
 	
 .PHONY : demo
 demo :
-	./manit.native < demo2.mt > output.ll
+	./manit.native < demo.mt > output.ll
 	lli output.ll
 # More detailed: build using ocamlc/ocamlopt + ocamlfind to locate LLVM
 

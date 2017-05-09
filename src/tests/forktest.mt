@@ -1,6 +1,5 @@
 pid = fork();
-if (pid == 0)
-{
-	/* child process */
+
+if (pid != 0) {
 	print("forked");
 }
