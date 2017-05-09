@@ -23,3 +23,7 @@ arr[0] = 10;
 print(tester.b);
 print(arr[2]);
 
+testFloat = 1.1;
+print(testFloat);
+
+

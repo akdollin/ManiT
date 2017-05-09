@@ -46,17 +46,17 @@ let rec find_var scope name = try
     | _ -> raise Not_found
 
 let find_built_in name = try
-  List.find (fun (id, typ, ret) -> id = name) built_in with Not_found -> raise Not_found
+  List.find (fun (id, _ , _ ) -> id = name) built_in with Not_found -> raise Not_found
 
 let find_func name = try
   List.find (fun f -> f.fname = name) global_env.funcs with Not_found -> raise Not_found  
 
 let exist_func name = try
-  List.find (fun f -> f.fname = name) global_env.funcs; true with Not_found -> false
+  ignore(List.find (fun f -> f.fname = name) global_env.funcs); true with Not_found -> false
 
 let check_duplicate_struct strctName =
 (* Hashtbl.find structs_hash strct; true with Not_found -> false *)
-  try Hashtbl.find structs_hash strctName; true with Not_found -> false
+  try ignore(Hashtbl.find structs_hash strctName); true with Not_found -> false
 
 (* Helper function to check for dups in a list *)
 let report_duplicate exceptf list =
@@ -104,13 +104,13 @@ let rec check_expr (env : environment) = function
           env.scope.variables <- (decl :: env.scope.variables);
           Assign((Id(name), right_typ), (expr, right_typ)), right_typ
         in sast_assign
-      | A.Array_access(arrayName,index) -> 
+      | A.Array_access( _, _ ) -> 
         let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
         let (arr, left_typ) = check_expr env lhs in
           if left_typ <> right_typ (* type mismatch. depends on rule. *)
           then raise (Failure (" type mismatch in array assign"))
           else Assign((arr, left_typ), (expr, right_typ)), right_typ
-      | A.Struct_access(structName, field) -> 
+      | A.Struct_access( _, _ ) -> 
         let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
         let (strct, left_typ) = check_expr env lhs in
           if left_typ <> right_typ (* type mismatch. depends on rule. *)
@@ -150,8 +150,8 @@ let rec check_expr (env : environment) = function
         (match t1, t2 with
           A.Bool, A.Bool -> A.Bool
         | _, _ -> raise(Failure("binary op type mismatch")))
-      | _ -> raise(Failure("binop can't handle these ops."))
-
+(*       | _ -> raise(Failure("binop can't handle these ops."))
+ *)
     in let typ = binop_type t1 op t2 in
     Binop(e1, op, e2), typ
       
@@ -168,8 +168,8 @@ let rec check_expr (env : environment) = function
           (if typ != A.Bool
           then raise(Failure("unary not operation does not support this type ")));
           Unop(uop, (e, typ)), typ
-      | _ -> raise(Failure("unop error"))
-      )
+(*       | _ -> raise(Failure("unop error"))
+ *)      )
   
   (* Function Call *)
   | Ast.Call(name, actuals) -> (
@@ -198,7 +198,7 @@ let rec check_expr (env : environment) = function
         in match_types func.formals typed_actuals;
         Call(name, typed_actuals), func.typ (* return name and f_typ from fdecl *)
       ))
-  | Struct_access(var_expr, attr) ->
+  | A.Struct_access(var_expr, attr) ->
       (* convert to str *)
       let var = (match var_expr with 
           A.Id(s) -> s
@@ -206,16 +206,16 @@ let rec check_expr (env : environment) = function
 
       let (var, A.Struct_typ(sname)) = find_var env.scope var in  (* find the instance of struct that was declared in current scope *)
       let strc = Hashtbl.find structs_hash sname in (* find strc type definition *)
-      let (typ, _) = List.find (fun (_, id) -> id = attr) strc.vdecls in (* typ of attr *)
+      let (typ, _) = List.find (fun (_, id) -> id = attr) strc.A.vdecls in (* typ of attr *)
       (* find index of attr in struct. this index is used in codegen *)
       let rec index_of_list x l = (match l with
           hd::tl -> let (_,id) = hd in if id = x then 0 else 1 + index_of_list x tl
         | _ -> raise(Failure("index_of_list failed"))) in
-      let index = index_of_list attr strc.vdecls in
+      let index = index_of_list attr strc.A.vdecls in
       Struct_access(var, attr, index), typ
       (* need to handle each error separately for robustness *)
   
-  | Array_create(expr_list) ->
+  | A.Array_create(expr_list) ->
       let length = List.length expr_list in
       let checked_expr_list = List.map (fun expr -> check_expr env expr) expr_list in
       let typs = List.map (fun (_,typ) -> typ) checked_expr_list in
@@ -223,13 +223,13 @@ let rec check_expr (env : environment) = function
         false -> raise(Failure("typs elements in array are not coherent"))
       | true -> Array_create(checked_expr_list), Ast.Array_typ(List.hd typs, length))
 
-  | Array_access(var_expr, index_expr) ->
+  | A.Array_access(var_expr, index_expr) ->
       (* convert to str *)
       let var = (match var_expr with
           A.Id(s) -> s
         | _ -> raise(Failure("array access: complex vars not supported as of now."))) in 
       (* find var first *)
-      let (var, A.Array_typ(var_typ, length)) = try find_var env.scope var with Not_found ->
+      let (var, A.Array_typ(var_typ, length)) = try find_var env.scope var; with Not_found ->
         raise(Failure("array variable not found")) in
       (* need to check if arr typ *)
       (* check index expr *)
@@ -246,7 +246,7 @@ let rec check_expr (env : environment) = function
 
 (* gets return types from checked stmts with typed expressions *)
 let rec get_return_types typ_list stmt = match stmt with
-    Return((e, t)) -> t :: typ_list 
+    Return((_, t)) -> t :: typ_list 
   | Block(sl) -> List.fold_left get_return_types typ_list sl
   | If(_, s1, s2) -> (get_return_types typ_list s1) @ (get_return_types typ_list s2)
   | While (_, s) -> (get_return_types typ_list s)
@@ -278,18 +278,18 @@ let rec check_stmt env = function
   checks env. checks if all return types match with fdecl. adds fdecl to env. *)
   | Ast.Func(func) ->
     (* add fdecl to global env if it hasn't declared previously. *)
-    ( match exist_func func.fname with 
+    ( match exist_func func.A.fname with 
       false ->
         (* make new scope and env with formals *)
-        let flipped_formals = List.map (fun (t, id) -> (id, t)) func.formals in
+        let flipped_formals = List.map (fun (t, id) -> (id, t)) func.A.formals in
         let new_scope = { parent = Some(env.scope); variables = flipped_formals } in
         let new_env = { scope = new_scope } in
         (* iterate thru stmtlist like a block *)
-        let sast_fbody = List.map (fun stmt -> check_stmt new_env stmt) func.body in
-        let sast_func = { typ = func.typ; fname = func.fname; formals = func.formals; body = sast_fbody } in
+        let sast_fbody = List.map (fun stmt -> check_stmt new_env stmt) func.A.body in
+        let sast_func = { typ = func.A.typ; fname = func.A.fname; formals = func.A.formals; body = sast_fbody } in
         global_env.funcs <- (sast_func :: global_env.funcs);
         (* check return typs within fbody and ftype. calls check_expr again on return stmts. *)
-        check_return_types func.typ sast_fbody;
+        check_return_types func.A.typ sast_fbody;
         Func(sast_func)
     | true -> raise(Failure("cannot redeclare function with same name")); )
   (* struct stmt *)
@@ -297,16 +297,16 @@ let rec check_stmt env = function
     (*  ignore(check_duplicate_struct strc); *)    
     (match check_duplicate_struct strc.A.sname with 
       false -> 
-        let check_fields = report_duplicate (fun n -> "duplicate struct field " ^ n) (List.map (fun n -> snd n) strc.A.vdecls) in
-        let struct_sast = { sname = strc.sname; vdecls = strc.vdecls } in
+        ignore(report_duplicate (fun n -> "duplicate struct field " ^ n) (List.map (fun n -> snd n) strc.A.vdecls));
+        let struct_sast = { sname = strc.A.sname; vdecls = strc.A.vdecls } in
         Hashtbl.add structs_hash strc.A.sname strc;
         Struc(struct_sast)
-    | true -> raise(Failure("cannot redeclare struct with same name"));)
+    | true -> raise(Failure("cannot redeclare struct with same name")))
 
   | Ast.Vdecl(typ, name) -> 
     (match typ with (* check if struct typ *)
-      Struct_typ(strc_name) -> 
-        try find_var env.scope name; (* if var name already exists *)
+      A.Struct_typ(strc_name) -> 
+        try ignore(find_var env.scope name); (* if var name already exists *)
         raise(Failure("Cannot redeclare an existing variable name!")) with 
         Not_found -> 
             (match check_duplicate_struct strc_name with (* check if struct typ exists *)
@@ -315,12 +315,12 @@ let rec check_stmt env = function
                 env.scope.variables <- (decl :: env.scope.variables);
                 Vdecl(typ,name)
             | false -> raise(Failure("Struct not declared!")))
-      | _ -> raise(Failure("ManiT is type inferred, you dun messed up!")))
+      |_-> raise(Failure("ManiT is type inferred, you dun messed up!")))
 
   (* conditionals *)
   | Ast.If(e, s1, s2) ->
       let (e, typ) = check_expr env e in
-      (if typ != Bool then raise (Failure ("If stmt does not support this type")));
+      (if typ != A.Bool then raise (Failure ("If stmt does not support this type")));
       If((e, typ), check_stmt env s1, check_stmt env s2)
   | Ast.While(e, s) ->
       let (e, typ) = check_expr env e in
@@ -330,10 +330,10 @@ let rec check_stmt env = function
       let (e1, typ1) = check_expr env e1 (*need to have empty expr *)
       and (e2, typ2) = check_expr env e2
       and (e3, typ3) = check_expr env e3 in
-      (if typ2 != Bool then raise(Failure("For stmt does not support this type")));
+      (if typ2 != A.Bool then raise(Failure("For stmt does not support this type")));
       For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
-  | _ -> raise(Failure("unchecked stmts"))
-
+(*   | _ -> raise(Failure("unchecked stmts"))
+ *)
 (* environment is a record with scope and return type. 
 scope is subrecord with parent and variables.
 may want to add more attributes to records. *)    

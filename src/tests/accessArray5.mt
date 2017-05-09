@@ -1,10 +1,10 @@
-def int foo() {
-	a = [1.1,23.0,0.3];
-	b = a[0];
-	c = a[2];
-	d = a[0];
-	return d;
+def float foo() {
+	arra = [1.0,23.1,0.2];
+	e = arra[0];
+	g = arra[0];
+	arra[0] = 7.9;
+	return arra[0];
 }
 
-temp = foo();
-print(temp);
+tempFloat = foo();
+print(tempFloat);

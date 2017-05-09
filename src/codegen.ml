@@ -39,7 +39,6 @@ let rec ltype_of_typ = function
   | A.Void -> void_t  (* need void? see return types *)
   | A.Struct_typ(sname) -> find_struct_typ sname (* assume that all struct typs all already made *)
   | A.Array_typ(elem_typ, length) -> L.array_type (ltype_of_typ elem_typ) length
-  | _ -> i32_t (* placed due to error. *)
 
 (* Ast type to llvm value. *)
 let rec lvalue_of_typ typ = match typ with
@@ -48,7 +47,6 @@ let rec lvalue_of_typ typ = match typ with
   | A.String -> L.const_pointer_null  (ltype_of_typ typ)
   | A.Struct_typ(sname) -> L.const_named_struct (find_struct_typ sname) [||]
   | A.Array_typ(elem_typ, length) -> L.const_array (ltype_of_typ elem_typ) (Array.make length (lvalue_of_typ elem_typ))
-  | _ -> raise(Exceptions.BugCatch "no default value for this typ") 
 
 (* expr to str
 let expr_to_str e = match e with
@@ -92,7 +90,7 @@ let close_file_t = L.function_type i32_t [| str_t |] in
 let close_file_func = L.declare_function "fclose" close_file_t the_module in
 
 let fputs_t = L.function_type i32_t [| i32_t ; str_t |] in
-let fputs_func = L.declare_function "fputs" fputs_t the_module in
+let _ = L.declare_function "fputs" fputs_t the_module in
 
 (*Args: str, num of chars to copy, file pointer*)
 let fgets_t = L.function_type str_t [| str_t; i32_t; str_t |] in
@@ -133,7 +131,7 @@ and float_format_str = L.build_global_stringptr "%f\n" "fmt" builder
 and string_format_str = L.build_global_stringptr "%s\n" "fmt" builder in
 
 (* Core method that build llvm IR for fbody *)
-let rec build_function fdecl =
+let build_function fdecl =
 
   (* search prototype and get builder *)
   let (the_function, _ ) = StringMap.find fdecl.S.fname prototypes in
@@ -156,9 +154,7 @@ let rec build_function fdecl =
 
   (* original lookup: Return the value for a variable or formal argument *)
   (* no raise Failure here to use Not_found *)
-  let find_var id = try Hashtbl.find locals id with Not_found -> Hashtbl.find globals id
-  and find_local id = Hashtbl.find locals id 
-  and find_global id = Hashtbl.find globals id in
+  let find_var id = try Hashtbl.find locals id with Not_found -> Hashtbl.find globals id in
   
   (* print format typ. nested in Call? *)
 
@@ -196,7 +192,7 @@ let rec build_function fdecl =
     S.Id(id) ->
       (* allocate space for lhs *)
       let var = try find_var id with Not_found ->
-        (alloc_expr id typ in_b builder; find_var id) in var
+        (ignore(alloc_expr id typ in_b builder); find_var id) in var
     | S.Struct_access (var, _, index) ->
         let llvalue = find_var var in (* llvalue from build_alloca *)
         let addr = L.build_struct_gep llvalue index "tmp" builder in addr
@@ -208,14 +204,14 @@ let rec build_function fdecl =
 
   (* Construct code for an expression; return its value *)
   let rec build_expr builder in_b = function
-      S.IntLit i, t -> L.const_int i32_t i
-    | S.FloatLit f, t -> L.const_float d_t f
+      S.IntLit i, _ -> L.const_int i32_t i
+    | S.FloatLit f, _ -> L.const_float d_t f
     (*| A.DoubleLit d, t -> L.const_double i64_t d *)
-    | S.BoolLit b, t -> L.const_int i1_t (if b then 1 else 0)
-    | S.StringLit s, t -> L.build_global_stringptr s "" builder
+    | S.BoolLit b, _ -> L.const_int i1_t (if b then 1 else 0)
+    | S.StringLit s, _ -> L.build_global_stringptr s "" builder
     (* | A.Noexpr -> L.const_int i32_t 0 *)
-    | S.Id s, t -> L.build_load (find_var s) s builder (* R.H.S lookup *)
-    | S.Binop (e1, op, e2), t ->
+    | S.Id s, _ -> L.build_load (find_var s) s builder (* R.H.S lookup *)
+    | S.Binop (e1, op, e2), _ ->
         let e1' = build_expr builder in_b e1
         and e2' = build_expr builder in_b e2 in
         (match op with
@@ -232,12 +228,12 @@ let rec build_function fdecl =
         | A.Greater -> L.build_icmp L.Icmp.Sgt
         | A.Geq     -> L.build_icmp L.Icmp.Sge
         ) e1' e2' "tmp" builder
-    | S.Unop(op, e), t ->
+    | S.Unop(op, e), _ ->
         let e' = build_expr builder in_b e in
         (match op with
           A.Neg     -> L.build_neg
         | A.Not     -> L.build_not) e' "tmp" builder
-    | S.Assign ((lhs, ltyp), rhs), typ ->
+    | S.Assign ((lhs, _), rhs), typ ->
 
        let l_val = (addr_of_expr lhs typ in_b builder)
 (*        let target = match lhs with 
@@ -253,7 +249,7 @@ let rec build_function fdecl =
       (* build rhs and store *)
       let e' = build_expr builder in_b rhs in
         ignore (L.build_store e' l_val builder); e' 
-    | S.Call ("print", [(e, expr_t)]), t ->
+    | S.Call ("print", [(e, expr_t)]), _ ->
     (*let t = (* find the type of it *) in*)
       let var = build_expr builder in_b (e,expr_t) in
       (match expr_t with
@@ -274,13 +270,13 @@ let rec build_function fdecl =
           L.build_call printf_func [| string_format_str ; (L.build_global_stringptr "" "" builder) |] 
       | _ -> raise(Failure("Call semant failed"))) "printf" builder
     (* built in functions *)
-    | S.Call ("open", e), t ->
+    | S.Call ("open", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call open_file_func (Array.of_list actuals) "fopen" builder
-    | S.Call ("fgets", e), t ->
+    | S.Call ("fgets", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fgets_func (Array.of_list actuals) "fgets" builder
-    | S.Call ("read", e), t ->
+    | S.Call ("read", e), _ ->
         (*
         (* ptr *)
         let arg1 = List.nth 0 in
@@ -293,18 +289,18 @@ let rec build_function fdecl =
   *)
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fread_func (Array.of_list actuals) "fread" builder
-    | S.Call ("write", e), t ->
+    | S.Call ("write", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fwrite_func (Array.of_list actuals) "fwrite" builder
-    | S.Call ("len", e), t ->
+    | S.Call ("len", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call strlen_func (Array.of_list actuals) "strlen" builder
-    | S.Call ("close", e), t ->
+    | S.Call ("close", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call close_file_func (Array.of_list actuals) "fclose" builder
-    | S.Call ("fork", e), t ->
+    | S.Call ("fork", _), _ ->
         L.build_call fork_func (Array.of_list []) "fork" builder
-    | S.Call (f, act), t ->
+    | S.Call (f, act), _ ->
        let (fdef, fdecl) = StringMap.find f prototypes in
        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev act)) in
        let result = (match fdecl.S.typ with A.Void -> ""
@@ -324,11 +320,11 @@ let rec build_function fdecl =
     
     | S.Array_access (arr, index), _ ->
        let arr_lvalue = find_var arr in
-       let loaded_lvalue = L.build_load arr_lvalue "loaded" builder in
+       ignore(L.build_load arr_lvalue "loaded" builder); 
        let elem_ptr = L.build_gep arr_lvalue (*loaded_lvalue*) [|L.const_int i32_t 0; L.const_int i32_t index|] "arr addr" builder in
        L.build_load elem_ptr "array_access" builder
 
-    | S.Struct_access (var, attr, index), t ->
+    | S.Struct_access (var, _ , index), _ ->
        let llvalue = find_var var in
        let addr = L.build_struct_gep llvalue index "tmp" builder in
        L.build_load addr "struct_access" builder
@@ -387,6 +383,7 @@ let rec build_function fdecl =
     
     (* vdecl for structs. type checked in semant *)
     | S.Vdecl(typ, id) -> alloc_stmt id typ builder in_b
+    | _ -> raise(Failure("Something went bad in codegen checkStatement"))
   in
 
   (* build code for each stmt in body. Cast to A.Block? *)

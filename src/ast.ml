@@ -22,8 +22,6 @@ type expr =
   | Unop of uop * expr
   | Assign of expr * expr
   | Call of string * expr list (*fname and actuals*)
-  | Noexpr (* ERROR? is Noexpr ok? *) 
-  | GlobalAsn of string * expr (* r.h.s can be local assingment. change codegen *)
   | Array_create of expr list
   | Array_access of expr * expr
   | Struct_access of expr * string (* can attr be an expr too? *)

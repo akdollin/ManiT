@@ -1,4 +1,4 @@
-struct tester = {
+struct tester {
 	int a;
 	string c;
 	bool d;

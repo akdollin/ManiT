@@ -48,7 +48,6 @@ stmts:
 
 stmt:
     expr SEMI { Expr $1 }
-  | RETURN SEMI { Return Noexpr } 
   | RETURN expr SEMI { Return $2 }
   | LBRACE stmts RBRACE { Block(List.rev $2) }
   | IF LPAREN expr RPAREN stmt %prec NOELSE { If($3, $5, Block([])) }
@@ -61,8 +60,7 @@ stmt:
   | vdecl { Vdecl($1) }
 
 expr_opt: 
-    /* nothing */ { Noexpr }
-  | expr          { $1 }
+  expr          { $1 }
 
 struct_typ:
   | STRUCT ID { $2 }
@@ -134,7 +132,6 @@ expr:
   | LPAREN expr RPAREN { $2 }
   | expr ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN exprs_opt RPAREN { Call($1, $3) }
-  | GLOBAL ID ASSIGN expr { GlobalAsn($2, $4) } /* global asn */
   /* structs and arrays */
   | expr DOT ID { Struct_access($1, $3) }
   /* add struct fcall here */
