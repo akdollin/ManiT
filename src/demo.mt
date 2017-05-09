@@ -106,7 +106,7 @@ print(a3);
 print(a4);
 print(a5);
 print(a6);
-print("");
+print(" ");
 print(a8);
 print(a9);
 print(a10);
