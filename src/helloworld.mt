@@ -1,4 +1,4 @@
-/*a = 4;
+a = 4;
 b = "string";
 c = true;
 d = 1.1;
@@ -20,13 +20,13 @@ tester.b = 4;
 arr = [1,2,3];
 arr[0] = 10;
 
-print(tester.b);
+/*print(tester.b);*/
 
-testFloat = 1.1;*/
+testFloat = 1.1;
 
 
 sleep(1);
 
-execlp("cat", "cat", "demo2.mt",0);
+/*execlp("cat", "cat", "demo2.mt",0);*/
 
 sleep(1);

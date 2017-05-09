@@ -1,5 +1,4 @@
-(* Abstract Syntax Tree.
-contains ocaml types so that parser can generate these types from tokens *)
+(* Abstract Syntax Tree. Contains Ocaml types so that parser can generate these types from tokens *)
 
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
           And | Or
@@ -9,8 +8,6 @@ type uop = Neg | Not
 type typ = Int | Bool | Float | String | Void | Struct_typ of string | Array_typ of typ * int
 
 type bind = typ * string
-
-(* need to check if formals have Void typ *)
 
 type expr =
     IntLit of int
@@ -24,7 +21,7 @@ type expr =
   | Call of string * expr list (*fname and actuals*)
   | Array_create of expr list
   | Array_access of expr * expr
-  | Struct_access of expr * string (* can attr be an expr too? *)
+  | Struct_access of expr * string
 
 type stmt =
     Block of stmt list

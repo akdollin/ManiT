@@ -18,7 +18,6 @@ let i8_t   = L.i8_type   context
 let i1_t   = L.i1_type   context
 let void_t = L.void_type context
 let str_t = L.pointer_type i8_t
-(* let i8ptr_t = L.pointer_type i8_t *)
 
 (* struct types *)
 let struct_types:(string, L.lltype) Hashtbl.t = Hashtbl.create 10
@@ -36,7 +35,7 @@ let rec ltype_of_typ = function
   | A.Float -> d_t
   | A.String -> str_t 
   | A.Bool -> i1_t
-  | A.Void -> void_t  (* need void? see return types *)
+  | A.Void -> void_t 
   | A.Struct_typ(sname) -> find_struct_typ sname (* assume that all struct typs all already made *)
   | A.Array_typ(elem_typ, length) -> L.array_type (ltype_of_typ elem_typ) length
 
@@ -48,13 +47,6 @@ let rec lvalue_of_typ typ = match typ with
   | A.Struct_typ(sname) -> L.const_named_struct (find_struct_typ sname) [||]
   | A.Array_typ(elem_typ, length) -> L.const_array (ltype_of_typ elem_typ) (Array.make length (lvalue_of_typ elem_typ))
 
-(* expr to str
-let expr_to_str e = match e with
-  S.Id(str) -> str
-  | _ -> raise (Exceptions.BugCatch "string_of_expr")
-*)
-
-
 
 (* declares struct typ *)
 let declare_struct_typ s =
@@ -64,7 +56,7 @@ let declare_struct_typ s =
 (* builds the body of struct typ *)
 let define_struct_body s =
   let struct_typ = try Hashtbl.find struct_types s.S.sname 
-    with Not_found -> raise(Exceptions.BugCatch "undefined define struct typ") in
+    with Not_found -> raise(Exceptions.ErrCatch "undefined struct typ") in
   let vdecl_types = List.map (fun (typ, _) -> typ) s.S.vdecls in
   let vdecl_lltypes = Array.of_list (List.map ltype_of_typ vdecl_types) in
   L.struct_set_body struct_typ vdecl_lltypes false
@@ -98,9 +90,8 @@ let fgets_func = L.declare_function "fgets" fgets_t the_module in
 
 let fwrite_t = L.function_type i32_t [| str_t; i32_t; i32_t; str_t |] in
 let fwrite_func = L.declare_function "fwrite" fwrite_t the_module in
+(* ******************* END FILE READ WRITE ******************** *)
 
-let fread_t = L.function_type i32_t [| str_t; i32_t; i32_t; str_t |] in
-let fread_func = L.declare_function "fread" fread_t the_module in
 
 let strlen_t = L.function_type i32_t [| str_t |] in
 let strlen_func = L.declare_function "strlen" strlen_t the_module in
@@ -108,13 +99,12 @@ let strlen_func = L.declare_function "strlen" strlen_t the_module in
 (* forking *)
 let fork_t = L.function_type i32_t [||] in
 let fork_func = L.declare_function "fork" fork_t the_module in
-
+(* sleep *)
 let sleep_t = L.function_type i32_t [|i32_t|] in
 let sleep_func = L.declare_function "sleep" sleep_t the_module in
-
+(* execlp *)
 let execlp_t = L.function_type i32_t [|str_t ; str_t; str_t; i32_t |] in
 let execlp_func = L.declare_function "execlp" execlp_t the_module in
-(* ******************* END FILE READ WRITE ******************** *)
 
 
 (* build function prototypes *)
@@ -129,7 +119,7 @@ List.fold_left build_proto StringMap.empty functions in
 
 (* format strings for printing. only in main_func *)
 let (main_func, _) = try StringMap.find "main" prototypes
-with Not_found -> raise(Exceptions.BugCatch "main function does not exist") in
+with Not_found -> raise(Exceptions.ErrCatch "main function does not exist") in
 let builder = L.builder_at_end context (L.entry_block main_func) in
 let int_format_str = L.build_global_stringptr "%d\n" "fmt" builder
 and float_format_str = L.build_global_stringptr "%f\n" "fmt" builder 
@@ -158,14 +148,9 @@ let build_function fdecl =
   let _ = StringMap.iter (fun id formal -> Hashtbl.add locals id formal) formals in
 
   (* original lookup: Return the value for a variable or formal argument *)
-  (* no raise Failure here to use Not_found *)
   let find_var id = try Hashtbl.find locals id with Not_found -> Hashtbl.find globals id in
   
-  (* print format typ. nested in Call? *)
 
-
- 
-  
   (* Allocates lhs when assignment is declaration *)
   let alloc_expr id typ in_block builder = 
     let init = match typ with
@@ -211,10 +196,8 @@ let build_function fdecl =
   let rec build_expr builder in_b = function
       S.IntLit i, _ -> L.const_int i32_t i
     | S.FloatLit f, _ -> L.const_float d_t f
-    (*| A.DoubleLit d, t -> L.const_double i64_t d *)
     | S.BoolLit b, _ -> L.const_int i1_t (if b then 1 else 0)
     | S.StringLit s, _ -> L.build_global_stringptr s "" builder
-    (* | A.Noexpr -> L.const_int i32_t 0 *)
     | S.Id s, _ -> L.build_load (find_var s) s builder (* R.H.S lookup *)
     | S.Binop (e1, op, e2), _ ->
         let e1' = build_expr builder in_b e1
@@ -239,23 +222,12 @@ let build_function fdecl =
           A.Neg     -> L.build_neg
         | A.Not     -> L.build_not) e' "tmp" builder
     | S.Assign ((lhs, _), rhs), typ ->
-
        let l_val = (addr_of_expr lhs typ in_b builder)
-(*        let target = match lhs with 
-        S.Id(id) ->
-          (* allocate space for lhs *)
-          let var = try find_var id with Not_found ->
-            (alloc_expr id typ in_b builder; find_var id) in var
-        | S.Array_access(arrayName,index)-> raise(Failure("in array assign codegen"))
-        | S.Struct_access (var, attr, index)-> let left = build_expr builder in_b (lhs, ltyp) in left 
-        | _ -> raise(Failure("Id not found in codegen"))  *)
       in
-
       (* build rhs and store *)
       let e' = build_expr builder in_b rhs in
         ignore (L.build_store e' l_val builder); e' 
     | S.Call ("print", [(e, expr_t)]), _ ->
-    (*let t = (* find the type of it *) in*)
       let var = build_expr builder in_b (e,expr_t) in
       (match expr_t with
         A.Int ->
@@ -263,11 +235,6 @@ let build_function fdecl =
       | A.Float ->
           L.build_call printf_func [| float_format_str ; (var) |]
       | A.Bool ->
-              (*
-          let tr = L.build_global_stringptr "true" "" builder in
-          let fa = L.build_global_stringptr "false" "" builder in
-          if (L.is_null var) then L.build_call printf_func [| string_format_str ; (fa) |]
-          else L.build_call printf_func [| string_format_str ; (tr) |] *)
           L.build_call printf_func [| int_format_str ; (var) |]
       | A.String ->
           L.build_call printf_func [| string_format_str ; (var) |]
@@ -284,19 +251,6 @@ let build_function fdecl =
     | S.Call ("fgets", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fgets_func (Array.of_list actuals) "fgets" builder
-    | S.Call ("read", e), _ ->
-        (*
-        (* ptr *)
-        let arg1 = List.nth 0 in
-        (* size *)
-        let arg2 = build_expr builder in_b (List.nth 1) in
-        (* count *)
-        let arg3 = build_expr builder in_b (List.nth 2) in
-        (* file object *)
-        let arg4 = build_expr builder in_b (List.nth 3) in
-  *)
-        let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
-        L.build_call fread_func (Array.of_list actuals) "fread" builder
     | S.Call ("write", e), _ ->
         let actuals = List.rev (List.map (build_expr builder in_b) (List.rev e)) in
         L.build_call fwrite_func (Array.of_list actuals) "fwrite" builder
@@ -397,7 +351,7 @@ let build_function fdecl =
     | _ -> raise(Failure("Something went bad in codegen checkStatement"))
   in
 
-  (* build code for each stmt in body. Cast to A.Block? *)
+  (* build code for each stmt in body.*)
   let builder = build_stmt builder false (S.Block fdecl.S.body) in
   
   (* Add a return if the last block falls off the end *)
@@ -413,7 +367,7 @@ the_module
 
 (* function to split fdecls and stmts. store stmts in main's body *)
 let split stmts = 
-  let split1 (fdecls, sdecls, main_body) stmt = match stmt with (* why func_decl_t?*) 
+  let split1 (fdecls, sdecls, main_body) stmt = match stmt with 
     S.Func(fdecl) -> fdecls@[fdecl], sdecls, main_body
   | S.Struc(sdecl) -> fdecls, sdecls@[sdecl], main_body
   | _ -> fdecls, sdecls, main_body@[stmt]
