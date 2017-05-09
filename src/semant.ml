@@ -1,5 +1,5 @@
-(* Semantic checking for the MicroC compiler. 
-checks semantics of AST and returns SAST. *)
+(* Semantic checking for the ManiT compiler. 
+Checks semantics of AST and returns SAST. *)
 
 open Sast
 module A = Ast
@@ -8,10 +8,10 @@ module StringMap = Map.Make(String)
 let built_in = [("print", A.String, A.Int)]
 
 let global_env = { 
+(*     define standard library functions*)
     funcs = [
         { typ = A.String; fname = "open"; formals = [(A.String,"a"); (A.String,"b")]; body = [] };
         { typ = A.Int; fname = "write"; formals = [(A.String,"a"); (A.Int,"b"); (A.Int,"c"); (A.String,"d")]; body = [] };
-        { typ = A.String; fname = "read"; formals = [(A.String,"a"); (A.Int,"b"); (A.Int,"c"); (A.String,"d")]; body = [] };
         { typ = A.String; fname = "fgets"; formals = [(A.String,"a"); (A.Int,"b"); (A.String,"c")]; body = [] };
         { typ = A.Int; fname = "len"; formals = [(A.String,"a")]; body = [] };
         { typ = A.Int; fname = "close"; formals = [(A.String,"a")]; body = [] };
@@ -23,7 +23,6 @@ let global_env = {
 
 
 let structs_hash:(string, A.strc) Hashtbl.t = Hashtbl.create 10
-(* let struct_func_hash:(string, A.func) Hashtbl.t = Hashtbl.create 10 *)
 
 (* whether t2 is assignable to t1. Add rules as necessary *)
 let is_assignable t1 t2 = match t1, t2 with
@@ -68,12 +67,6 @@ let report_duplicate exceptf list =
       | [] -> ()
     in helper (List.sort compare list)
 
-    (* let exist_struct name = try
-  List.find (fun s -> s.sname = name) global_structs.structs; true with Not_found -> false *)
-let check_valid_struct s =
-  try Hashtbl.find structs_hash s
-  with | Not_found -> raise (Exceptions.InvalidStruct s)
-
 (*check_expr: core type-matching function that recursively annotates type of each expr. *)
 let rec check_expr (env : environment) = function
   (* literals *)
@@ -89,11 +82,9 @@ let rec check_expr (env : environment) = function
   
   (* Assignment(string, expr)
   checks expr of R.H.S, and compares type of expr to that of L.H.S from its declaration. 
-  populates scope's variable if not found.
-  modified from hawk. need testing. 
-  need to add rules/function for promotion/demotion here. *)
+  populates scope's variable if not found. *)
   | Ast.Assign(lhs, expr) ->
-    let thing = match lhs with 
+    let check = match lhs with 
       A.Id(name) -> 
         let (expr, right_typ) = check_expr env expr in (* R.H.S typ *)
         let sast_assign = (* (n, (e, e's typ)), n's typ *) 
@@ -120,10 +111,9 @@ let rec check_expr (env : environment) = function
           else Assign((strct, left_typ), (expr, right_typ)), right_typ
       | _ -> raise(Failure("Not a valid assign: We only allow id, struct, and array assign"))
 
-    in thing
+    in check
   (* Binop(expr, op, expr)
-  checks types of L.H.S and R.H.S
-  we need to specify rules for promotion/demotion of OPs *)
+  checks types of L.H.S and R.H.S*)
   | Ast.Binop (e1, op, e2) ->
     let e1 = check_expr env e1
     and e2 = check_expr env e2 in
@@ -152,8 +142,7 @@ let rec check_expr (env : environment) = function
         (match t1, t2 with
           A.Bool, A.Bool -> A.Bool
         | _, _ -> raise(Failure("binary op type mismatch")))
-(*       | _ -> raise(Failure("binop can't handle these ops."))
- *)
+
     in let typ = binop_type t1 op t2 in
     Binop(e1, op, e2), typ
       
@@ -170,8 +159,7 @@ let rec check_expr (env : environment) = function
           (if typ != A.Bool
           then raise(Failure("unary not operation does not support this type ")));
           Unop(uop, (e, typ)), typ
-(*       | _ -> raise(Failure("unop error"))
- *)      )
+      )
   
   (* Function Call *)
   | Ast.Call(name, actuals) -> (
@@ -182,12 +170,6 @@ let rec check_expr (env : environment) = function
       | _ -> (* non-print functions *) (
         let func = try find_func name with Not_found ->
           raise(Failure("undefined function was called.")) in
-
-        (* unused?
-        let match_arg_num formals actuals =
-            if List.length formals <> List.length actuals then
-            raise(Failure("number of actuals and formals do not match")) in
-        *)
 
         let match_types formals actuals = match formals, actuals with
           | (ftyp, _) :: _, ( _ , atyp) :: _ ->
@@ -218,7 +200,6 @@ let rec check_expr (env : environment) = function
         | _ -> raise(Failure("index_of_list failed"))) in
       let index = index_of_list attr strc.A.vdecls in
       Struct_access(name, attr, index), typ
-      (* need to handle each error separately for robustness *)
   
   | A.Array_create(expr_list) ->
       let length = List.length expr_list in
@@ -245,13 +226,12 @@ let rec check_expr (env : environment) = function
       (* check index expr *)
       let (index_expr, index_expr_typ) = check_expr env index_expr in
       if index_expr_typ != A.Int then raise(Failure("array access requires int arg")) 
-      (* need separate function to evaluate the expr.
-         we only allow int literal (not binop, unop) for now *)
+      (* need separate function to evaluate the expr.*)
       else match index_expr with
           IntLit(index) -> 
             if index < 0 || index > length1 - 1 
             then raise(Failure("access out of bounds"))
-            else Array_access(var, index), var_typ1 (* no need to return the value here! *)
+            else Array_access(var, index), var_typ1
         | _ -> raise(Failure("array access: only int lit allowed for now"))
 
 (* gets return types from checked stmts with typed expressions *)
@@ -345,8 +325,7 @@ let rec check_stmt env = function
       For((e1, typ1), (e2, typ2), (e3, typ3), check_stmt env s)
 
 (* environment is a record with scope and return type. 
-scope is subrecord with parent and variables.
-may want to add more attributes to records. *)    
+scope is subrecord with parent and variables.*)    
 let init_env =
   let init_scope  = {
     parent = None;

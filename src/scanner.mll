@@ -1,10 +1,5 @@
 (* Ocamllex scanner for ManiT *)
 
-(*===---------------------------------------------------------------------===
- * Lexer
- * Currently assume that the only type is a double
- *===---------------------------------------------------------------------===*)
-
 {
     open Parser
     let unescape s = Scanf.sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
@@ -12,11 +7,7 @@
 
 let digit = ['0'-'9']
 let digits = digit+
-(* simpler versions to check error with struct access
-let letter = ['a'-'z' 'A'-'Z'] 
-let float = (digit+) ['.'] digit+
-let string = '"' (letter (letter | digit)+ as s)'"'
-*)
+
 
 let ascii = ([' '-'!' '#'-'[' ']'-'~'])
 let escape = '\\' ['\\' ''' '"' 'n' 'r' 't'] | '\\'

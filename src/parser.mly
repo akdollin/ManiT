@@ -76,6 +76,7 @@ any_typ:
   | any_typ_not_void { $1 }
   | VOID  { Void } 
 
+/*only used for structs*/
 vdecl_list:
   { [] }
   | vdecl_list vdecl { $2 :: $1 }
@@ -134,7 +135,6 @@ expr:
   | ID LPAREN exprs_opt RPAREN { Call($1, $3) }
   /* structs and arrays */
   | expr DOT ID { Struct_access($1, $3) }
-  /* add struct fcall here */
   | LBRACK exprs_list RBRACK { Array_create($2) }
   | expr LBRACK expr RBRACK { Array_access($1,$3) }
 
@@ -145,4 +145,3 @@ exprs_opt:
 exprs_list:
     expr                    { [$1] }
   | exprs_list COMMA expr { $3 :: $1 }
-

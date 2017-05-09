@@ -2,8 +2,6 @@
 semant.ml takes AST and produces SAST while checking semantics 
 *)
 
-(* create arr type ?*)
-
 type bind = Ast.typ * string
 
 type expr_det =
@@ -22,8 +20,6 @@ type expr_det =
   
   and expr_t = expr_det * Ast.typ (* typ comes first to match use in codegen *)
 
-(* type vdecl_t = 
-  Vdecl of Ast.typ * string *)
 
 type stmt_t =
     Block of stmt_t list
@@ -47,7 +43,6 @@ type stmt_t =
   and strc_t = {
     sname : string;
     vdecls : bind list;
-    (* funcs : func_t list; *)
   }
 
 type symbol_table = {
@@ -57,12 +52,10 @@ type symbol_table = {
 
 type environment = {
   scope: symbol_table;
-  (* return: t option. can check manually. *)
 }
 
 type global_environment = {
   mutable funcs: func_t list;
-  (* add globals here? design choice. global scope is the only scope w/o parent. *)
 }
 
 type program = stmt_t list

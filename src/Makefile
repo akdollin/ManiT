@@ -16,25 +16,30 @@ manit.native :
 clean :
 	ocamlbuild -clean
 	rm -rf testall.log *.diff manit scanner.ml parser.ml parser.mli
-	rm -rf *.cmx *.cmi *.cmo *.cmx *.o
+	rm -rf *.cmx *.cmi *.cmo *.cmx *.o pic*
 
+#to test for shift/reduce conflicts and other stuff
 .PHONY : parse
 parse :
 	ocamlyacc -v parser.mly
 
+#run all tests
 .PHONY : test
 test :
 	./testall.sh
 
+#run hello world test
 .PHONY : test2
 test2 :
 	./manit.native < helloworld.mt > output.ll
 	lli output.ll
-	
+
+#run demo
 .PHONY : demo
 demo :
 	./manit.native < demo.mt > output.ll
 	lli output.ll
+
 # More detailed: build using ocamlc/ocamlopt + ocamlfind to locate LLVM
 
 OBJS = ast.cmx codegen.cmx parser.cmx scanner.cmx semant.cmx manit.cmx
@@ -71,25 +76,3 @@ scanner.cmx : parser.cmx
 semant.cmo : ast.cmo
 semant.cmx : ast.cmx
 parser.cmi : ast.cmo
-
-# Building the tarball
-
-# TESTS = add1 arith1 arith2 arith3 fib for1 for2 func1 func2 func3	\
-#     func4 func5 func6 func7 func8 gcd2 gcd global1 global2 global3	\
-#     hello if1 if2 if3 if4 if5 local1 local2 ops1 ops2 var1 var2		\
-#     while1 while2
-
-# FAILS = assign1 assign2 assign3 dead1 dead2 expr1 expr2 for1 for2	\
-#     for3 for4 for5 func1 func2 func3 func4 func5 func6 func7 func8	\
-#     func9 global1 global2 if1 if2 if3 nomain return1 return2 while1	\
-#     while2
-
-# TESTFILES = $(TESTS:%=test-%.mc) $(TESTS:%=test-%.out) \
-# 	    $(FAILS:%=fail-%.mc) $(FAILS:%=fail-%.err)
-
-# TARFILES = ast.ml codegen.ml Makefile microc.ml parser.mly README scanner.mll \
-# 	semant.ml testall.sh $(TESTFILES:%=tests/%)
-
-# microc-llvm.tar.gz : $(TARFILES)
-# 	cd .. && tar czf microc-llvm/microc-llvm.tar.gz \
-# 		$(TARFILES:%=microc-llvm/%)

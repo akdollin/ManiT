@@ -7,10 +7,10 @@ LLI="lli"
 # Path to the LLVM compiler
 LLC="llc"
 
-# Path to the microc compiler.  Usually "./microc.native"
-# Try "_build/microc.native" if ocamlbuild was unable to create a symbolic link.
+# Path to the manit compiler.  Usually "./manit.native"
+# Try "_build/manit.native" if ocamlbuild was unable to create a symbolic link.
 MANIT="./manit.native"
-#MICROC="_build/microc.native"
+#MICROC="_build/manit.native"
 
 # Set time limit for all operations
 ulimit -t 30
@@ -86,15 +86,11 @@ Check() {
     generatedfiles="$generatedfiles ${basename}.ll ${basename}.s ${basename}.exe ${basename}.out" &&
     Run "$MANIT" "<" $1 ">" "${basename}.ll" &&
     Run "$LLI" "${basename}.ll" ">" "${basename}.out" &&
-    #Run "./${basename}.exe" > "${basename}.out" &&
     Compare ${basename}.out ${reffile}.out ${basename}.diff
 
     # Report the status and clean up the generated files
 
     if [ $error -eq 0 ] ; then
-    #if [ $keep -eq 0 ] ; then
-    #    rm -f $generatedfiles
-    #fi
     rm -f $generatedfiles
     echo "OK"
     echo "###### SUCCESS" 1>&2
@@ -167,18 +163,6 @@ fi
 for file in $files
 do
     Check $file 2>> $globallog
-    #case $file in
-    #*test-*)
-    #    Check $file 2>> $globallog
-    #    ;;
-    #*fail-*)
-    #    CheckFail $file 2>> $globallog
-    #    ;;
-    #*)
-    #    echo "unknown file type $file"
-    #    globalerror=1
-    #    ;;
-    #esac
 done
 
 rm -f *.ll *.s *.out *.err
