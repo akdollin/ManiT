@@ -31,6 +31,10 @@ test2 :
 	./manit.native < helloworld.mt > output.ll
 	lli output.ll
 	
+.PHONY : demo
+demo :
+	./manit.native < demo.mt > output.ll
+	lli output.ll
 # More detailed: build using ocamlc/ocamlopt + ocamlfind to locate LLVM
 
 OBJS = ast.cmx codegen.cmx parser.cmx scanner.cmx semant.cmx manit.cmx
