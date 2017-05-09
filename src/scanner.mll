@@ -19,7 +19,7 @@ let string = '"' (letter (letter | digit)+ as s)'"'
 *)
 
 let ascii = ([' '-'!' '#'-'[' ']'-'~'])
-let escape = '\\' ['\\' ''' '"' 'n' 'r' 't']
+let escape = '\\' ['\\' ''' '"' 'n' 'r' 't'] | '\\'
 let string = '"' ((ascii | escape)* as s) '"' 
 
 let float = ['+' '-']? (digits '.' ['0'-'9']* | '.' digits) (['e' 'E'] (['+' '-']? digits))?
