@@ -5,7 +5,10 @@
  * Currently assume that the only type is a double
  *===---------------------------------------------------------------------===*)
 
-{ open Parser }
+{
+    open Parser
+    let unescape s = Scanf.sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
+}
 
 let digit = ['0'-'9']
 let digits = digit+
@@ -13,8 +16,12 @@ let digits = digit+
 let letter = ['a'-'z' 'A'-'Z'] 
 let float = (digit+) ['.'] digit+
 let string = '"' (letter (letter | digit)+ as s)'"'
-*) 
-let string = '"' (([' '-'!' '#'-'[' ']'-'~'])* as s) '"' 
+*)
+
+let ascii = ([' '-'!' '#'-'[' ']'-'~'])
+let escape = '\\' ['\\' ''' '"' 'n' 'r' 't']
+let string = '"' ((ascii | escape)* as s) '"' 
+
 let float = ['+' '-']? (digits '.' ['0'-'9']* | '.' digits) (['e' 'E'] (['+' '-']? digits))?
 
 
@@ -74,7 +81,7 @@ need regex for types: char, float, array,
 *)
 | "true"   { TRUE }
 | "false"  { FALSE }
-| string   { STRINGLIT(s) }
+| string   { STRINGLIT(unescape s) }
 | digits as lxm { INTLIT(int_of_string lxm) }
 | float as lxm { FLOATLIT (float_of_string lxm) }
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
