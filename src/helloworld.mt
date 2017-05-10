@@ -1,32 +1,8 @@
-a = 4;
-b = "string";
-c = true;
-d = 1.1;
 
-a = 5;
-b = "hello";
-c = false;
-d = 2.1;
+if (true && true) {
+	print("hi");
+}
 
-struct test {
-	int b;
-};
-
-
-struct test tester;
-
-tester.b = 4;
-
-arr = [1,2,3];
-arr[0] = 10;
-
-/*print(tester.b);*/
-
-testFloat = 1.1;
-
-
-sleep(1);
-
-/*execlp("cat", "cat", "demo2.mt",0);*/
-
-sleep(1);
+if (true && false) {
+	print("no seen");
+}

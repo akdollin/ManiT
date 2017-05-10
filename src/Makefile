@@ -15,7 +15,7 @@ manit.native :
 .PHONY : clean
 clean :
 	ocamlbuild -clean
-	rm -rf testall.log *.diff manit scanner.ml parser.ml parser.mli
+	rm -rf testall.log *.diff manit scanner.ml parser.ml parser.mli output.ll
 	rm -rf *.cmx *.cmi *.cmo *.cmx *.o pic*
 
 #to test for shift/reduce conflicts and other stuff
